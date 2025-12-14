@@ -1,0 +1,20 @@
+services:
+  www:
+    build:
+      dockerfile: ./dockerfile.www
+    volumes:
+      - "./gitbrag:/app/gitbrag"
+      - "./db:/app/db"
+      - "./docker/www/prestart.sh:/app/prestart.sh"
+    ports:
+      - "80:80"
+    environment:
+      IS_DEV: true
+      RELOAD: true
+      CACHE_REDIS_HOST: redis
+      CACHE_REDIS_PORT: 6379
+    depends_on:
+      - redis
+
+  redis:
+    image: redis

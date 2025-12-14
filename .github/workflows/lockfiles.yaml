@@ -1,0 +1,42 @@
+name: Update Dependencies
+
+on:
+  # Allow API to be hit to trigger workflow.
+  workflow_dispatch:
+
+  # Every Monday at 1PM UTC (7AM EST)
+  schedule:
+    - cron: "0 11 * * 1"
+
+jobs:
+  update-lockfile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Update lockfile
+        run: uv lock --upgrade
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: update dependencies via uv lock"
+          title: "chore: update dependencies"
+          body: |
+            Automated dependency update via `uv lock --upgrade`.
+
+            Review the changes to `uv.lock` and ensure all tests pass before merging.
+          branch: automated-dependency-update
+          delete-branch: true
+          labels: dependencies

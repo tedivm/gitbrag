@@ -179,10 +179,7 @@ class GitHubAPIClient:
 
         # Fetch remaining pages concurrently (pages 2 through total_pages)
         logger.debug(f"Fetching pages 2-{total_pages} concurrently")
-        tasks = [
-            self.search_issues(query, sort, order, per_page, page)
-            for page in range(2, total_pages + 1)
-        ]
+        tasks = [self.search_issues(query, sort, order, per_page, page) for page in range(2, total_pages + 1)]
 
         # Execute all requests concurrently
         remaining_results = await asyncio.gather(*tasks, return_exceptions=True)

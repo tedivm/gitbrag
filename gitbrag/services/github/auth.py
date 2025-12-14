@@ -64,7 +64,7 @@ class GitHubClient:
             logger.info("Starting GitHub App OAuth flow")
             oauth_flow = GitHubOAuthFlow(
                 client_id=self.settings.github_app_client_id,
-                client_secret=self.settings.github_app_client_secret.get_secret_value(),
+                client_secret=self.settings.github_app_client_secret,
                 callback_port=self.settings.github_oauth_callback_port,
             )
 

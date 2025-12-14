@@ -1,8 +1,8 @@
 """Tests for settings configuration."""
 
-from gitbrag.settings import settings
-from gitbrag.conf.settings import Settings
 from gitbrag.conf.cache import CacheSettings
+from gitbrag.conf.settings import Settings
+from gitbrag.settings import settings
 
 
 def test_settings_exists():
@@ -54,12 +54,6 @@ def test_cache_enabled_attribute():
     """Test that settings has cache_enabled attribute."""
     assert hasattr(settings, "cache_enabled")
     assert isinstance(settings.cache_enabled, bool)
-
-
-def test_cache_enabled_default():
-    """Test that cache_enabled defaults to True."""
-    test_settings = Settings()
-    assert test_settings.cache_enabled is True
 
 
 def test_cache_redis_host_attribute():

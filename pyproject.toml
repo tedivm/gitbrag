@@ -25,14 +25,14 @@ authors = [{"name" = "Robert Hafner"}]
 dependencies = [
   "aiocache",
   "fastapi",
-  "uvicorn[standard]",
+  "httpx",
   "jinja2",
   "pydantic~=2.0",
   "pydantic-settings",
-  "pygithub>=2.5.0",
   "redis",
   "rich",
-  "typer"
+  "typer",
+  "uvicorn[standard]"
 ]
 description = "Create a brag list of open source contributions"
 dynamic = ["version"]

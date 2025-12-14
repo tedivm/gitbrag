@@ -1,7 +1,6 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from github import Auth, Github
 from pydantic import SecretStr
 
 from gitbrag.conf.github import GitHubAuthType, GitHubSettings
@@ -31,32 +30,37 @@ def github_app_settings() -> GitHubSettings:
 @pytest.mark.asyncio
 async def test_pat_client_creation(pat_settings: GitHubSettings) -> None:
     """Test creating GitHub client with PAT authentication."""
-    with patch("gitbrag.services.github.auth.Github") as mock_github:
-        mock_github.return_value = MagicMock(spec=Github)
+    with patch("gitbrag.services.github.auth.GitHubAPIClient") as mock_client_class:
+        mock_client_instance = AsyncMock()
+        mock_client_class.return_value = mock_client_instance
 
         client = GitHubClient(settings=pat_settings)
         github = await client.get_authenticated_client()
 
         assert github is not None
-        mock_github.assert_called_once()
-        # Verify Auth.Token was used
-        call_args = mock_github.call_args
-        assert call_args is not None
-        auth_arg = call_args.kwargs.get("auth") or call_args.args[0]
-        assert isinstance(auth_arg, Auth.Token)
+        assert github == mock_client_instance
+        # Verify GitHubAPIClient was created with token (positional argument)
+        mock_client_class.assert_called_once()
+        call_args = mock_client_class.call_args
+        assert call_args[0][0] == pat_settings.github_token
 
 
 @pytest.mark.asyncio
 async def test_token_override(pat_settings: GitHubSettings) -> None:
     """Test using token override instead of settings."""
-    with patch("gitbrag.services.github.auth.Github") as mock_github:
-        mock_github.return_value = MagicMock(spec=Github)
+    with patch("gitbrag.services.github.auth.GitHubAPIClient") as mock_client_class:
+        mock_client_instance = AsyncMock()
+        mock_client_class.return_value = mock_client_instance
 
-        client = GitHubClient(settings=pat_settings, token_override="override_token")
+        override_token = "override_token"
+        client = GitHubClient(settings=pat_settings, token_override=override_token)
         await client.get_authenticated_client()
 
-        # Verify Github was created with the override token
-        mock_github.assert_called_once()
+        # Verify GitHubAPIClient was created with the override token (positional argument)
+        mock_client_class.assert_called_once()
+        call_args = mock_client_class.call_args
+        # Token override is wrapped in SecretStr
+        assert call_args[0][0].get_secret_value() == override_token
 
 
 @pytest.mark.asyncio
@@ -64,24 +68,23 @@ async def test_github_app_oauth_flow(github_app_settings: GitHubSettings) -> Non
     """Test GitHub App OAuth authentication flow."""
     with (
         patch("gitbrag.services.github.auth.GitHubOAuthFlow") as mock_oauth_flow,
-        patch("gitbrag.services.github.auth.Github") as mock_github,
+        patch("gitbrag.services.github.auth.GitHubAPIClient") as mock_client_class,
     ):
         # Mock OAuth flow
         mock_flow_instance = AsyncMock()
-        mock_flow_instance.initiate_flow = AsyncMock()
-        mock_flow_instance.complete_flow = AsyncMock(return_value="oauth_access_token")
+        mock_flow_instance.authenticate = AsyncMock(return_value="oauth_access_token")
         mock_oauth_flow.return_value = mock_flow_instance
 
-        # Mock Github client
-        mock_github.return_value = MagicMock(spec=Github)
+        # Mock GitHubAPIClient
+        mock_client_instance = AsyncMock()
+        mock_client_class.return_value = mock_client_instance
 
         client = GitHubClient(settings=github_app_settings)
         github = await client.get_authenticated_client()
 
         assert github is not None
         mock_oauth_flow.assert_called_once()
-        mock_flow_instance.initiate_flow.assert_called_once()
-        mock_flow_instance.complete_flow.assert_called_once()
+        mock_flow_instance.authenticate.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -96,7 +99,7 @@ async def test_authentication_missing_token() -> None:
 
     client = GitHubClient(settings=settings)
 
-    with pytest.raises(ValueError, match="GitHub token not configured"):
+    with pytest.raises(ValueError, match="GitHub PAT token not configured"):
         await client.get_authenticated_client()
 
 
@@ -117,57 +120,5 @@ async def test_authentication_missing_github_app_credentials() -> None:
         await client.get_authenticated_client()
 
 
-@pytest.mark.asyncio
-async def test_client_caching(pat_settings: GitHubSettings) -> None:
-    """Test that authenticated client is cached."""
-    with patch("gitbrag.services.github.auth.Github") as mock_github:
-        mock_github.return_value = MagicMock(spec=Github)
-
-        client = GitHubClient(settings=pat_settings)
-
-        # Call twice
-        github1 = await client.get_authenticated_client()
-        github2 = await client.get_authenticated_client()
-
-        # Should return same instance
-        assert github1 is github2
-        # Should only create Github once
-        assert mock_github.call_count == 1
-
-
-def test_rate_limit_before_authentication(pat_settings: GitHubSettings) -> None:
-    """Test getting rate limit before authentication raises error."""
-    client = GitHubClient(settings=pat_settings)
-
-    with pytest.raises(ValueError, match="Client not authenticated"):
-        client.get_rate_limit()
-
-
-@pytest.mark.asyncio
-async def test_rate_limit_after_authentication(pat_settings: GitHubSettings) -> None:
-    """Test getting rate limit after authentication."""
-    with patch("gitbrag.services.github.auth.Github") as mock_github:
-        # Mock rate limit response
-        mock_rate_limit = MagicMock()
-        mock_rate_limit.core.limit = 5000
-        mock_rate_limit.core.remaining = 4999
-        mock_rate_limit.search.limit = 30
-        mock_rate_limit.search.remaining = 29
-        mock_rate_limit.graphql.limit = 5000
-        mock_rate_limit.graphql.remaining = 5000
-
-        mock_client = MagicMock(spec=Github)
-        mock_client.get_rate_limit.return_value = mock_rate_limit
-        mock_github.return_value = mock_client
-
-        client = GitHubClient(settings=pat_settings)
-        await client.get_authenticated_client()
-
-        rate_limit = client.get_rate_limit()
-
-        assert rate_limit["core_limit"] == 5000
-        assert rate_limit["core_remaining"] == 4999
-        assert rate_limit["search_limit"] == 30
-        assert rate_limit["search_remaining"] == 29
-        assert rate_limit["graphql_limit"] == 5000
-        assert rate_limit["graphql_remaining"] == 5000
+# Note: Client caching test removed - GitHubAPIClient is lightweight and doesn't need caching
+# Note: Rate limit checking is now handled within GitHubAPIClient, not in the auth wrapper

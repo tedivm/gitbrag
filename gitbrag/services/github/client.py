@@ -55,7 +55,8 @@ class GitHubAPIClient:
 
         response = await self._client.get(f"{self.base_url}/user")
         response.raise_for_status()
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result
 
     async def search_issues(
         self,
@@ -87,7 +88,7 @@ class GitHubAPIClient:
         if not self._client:
             raise RuntimeError("Client not initialized - use async with context manager")
 
-        params = {
+        params: dict[str, str | int] = {
             "q": query,
             "sort": sort,
             "order": order,
@@ -98,7 +99,8 @@ class GitHubAPIClient:
         try:
             response = await self._client.get(f"{self.base_url}/search/issues", params=params)
             response.raise_for_status()
-            return response.json()
+            result: dict[str, Any] = response.json()
+            return result
         except httpx.HTTPStatusError as e:
             # Handle rate limiting (403 or 429)
             if e.response.status_code in (403, 429) and retry_count < max_retries:
@@ -165,7 +167,8 @@ class GitHubAPIClient:
 
         # If we got everything in first page, return immediately
         if len(first_items) >= target_count:
-            return first_items[:target_count]
+            result_items: list[dict[str, Any]] = first_items[:target_count]
+            return result_items
 
         # Calculate how many pages we need
         total_pages = (target_count + per_page - 1) // per_page
@@ -175,25 +178,28 @@ class GitHubAPIClient:
             all_items = list(first_items)
             result = await self.search_issues(query, sort, order, per_page, 2)
             all_items.extend(result.get("items", []))
-            return all_items[:target_count]
+            return_items: list[dict[str, Any]] = all_items[:target_count]
+            return return_items
 
         # Fetch remaining pages concurrently (pages 2 through total_pages)
         logger.debug(f"Fetching pages 2-{total_pages} concurrently")
         tasks = [self.search_issues(query, sort, order, per_page, page) for page in range(2, total_pages + 1)]
 
         # Execute all requests concurrently
-        remaining_results = await asyncio.gather(*tasks, return_exceptions=True)
+        remaining_results: list[dict[str, Any] | BaseException] = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Combine all results
         all_items = list(first_items)
-        for result in remaining_results:
-            if isinstance(result, Exception):
+        for result in remaining_results:  # type: ignore[assignment]
+            if isinstance(result, BaseException):
                 logger.error(f"Error fetching page: {result}")
                 continue
+            # At this point, result is dict[str, Any]
             all_items.extend(result.get("items", []))
 
         logger.debug(f"Collected {len(all_items)} total items")
-        return all_items[:target_count]
+        return_items_final: list[dict[str, Any]] = all_items[:target_count]
+        return return_items_final
 
     async def get_rate_limit(self) -> dict[str, Any]:
         """Get current rate limit status.
@@ -209,4 +215,5 @@ class GitHubAPIClient:
 
         response = await self._client.get(f"{self.base_url}/rate_limit")
         response.raise_for_status()
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result

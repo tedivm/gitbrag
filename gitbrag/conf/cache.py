@@ -8,7 +8,7 @@ class CacheSettings(BaseSettings):
         extra="ignore",
     )
     # Cache control
-    cache_enabled: bool = True
+    cache_enabled: bool = False
 
     # Redis configuration
     cache_redis_host: str | None = None

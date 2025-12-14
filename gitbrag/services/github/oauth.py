@@ -228,3 +228,18 @@ class GitHubOAuthFlow:
 
             token: str = data["access_token"]
             return token
+
+    async def authenticate(self, scopes: list[str] | None = None) -> str:
+        """Complete OAuth flow in one call (initiate + complete).
+
+        Args:
+            scopes: List of OAuth scopes to request (defaults to repo access)
+
+        Returns:
+            Access token for GitHub API
+
+        Raises:
+            ValueError: If OAuth flow fails
+        """
+        await self.initiate_flow(scopes=scopes)
+        return await self.complete_flow()

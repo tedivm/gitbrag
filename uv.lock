@@ -186,10 +186,12 @@ source = { editable = "." }
 dependencies = [
     { name = "aiocache" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jinja2" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "redis" },
+    { name = "rich" },
     { name = "typer" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -216,10 +218,12 @@ dev = [
 requires-dist = [
     { name = "aiocache" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jinja2" },
     { name = "pydantic", specifier = "~=2.0" },
     { name = "pydantic-settings" },
     { name = "redis" },
+    { name = "rich" },
     { name = "typer" },
     { name = "uvicorn", extras = ["standard"] },
 ]

@@ -22,21 +22,23 @@ dev = [
 
 [project]
 authors = [{"name" = "Robert Hafner"}]
+dependencies = [
+  "aiocache",
+  "fastapi",
+  "httpx",
+  "jinja2",
+  "pydantic~=2.0",
+  "pydantic-settings",
+  "redis",
+  "rich",
+  "typer",
+  "uvicorn[standard]"
+]
 description = "Create a brag list of open source contributions"
 dynamic = ["version"]
 license = {"file" = "LICENSE"}
 name = "gitbrag"
 readme = {file = "README.md", content-type = "text/markdown"}
-dependencies = [
-  "aiocache",
-  "fastapi",
-  "uvicorn[standard]",
-  "jinja2",
-  "pydantic~=2.0",
-  "pydantic-settings",
-  "redis",
-  "typer"
-]
 
 [project.scripts]
 gitbrag = "gitbrag.cli:app"

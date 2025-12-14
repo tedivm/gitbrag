@@ -2,6 +2,94 @@
 
 This project uses [Typer](https://typer.tiangolo.com/) for building command-line interfaces, with [Click](https://click.palletsprojects.com/) as the underlying framework.
 
+## Available Commands
+
+### list - List GitHub Pull Requests
+
+List all pull requests authored by a GitHub user across all repositories and organizations.
+
+**Basic Usage:**
+
+```bash
+gitbrag list <username>
+```
+
+**Options:**
+
+- `--since DATE` - Start date for filtering (ISO format YYYY-MM-DD, default: 365 days ago)
+- `--until DATE` - End date for filtering (ISO format YYYY-MM-DD, default: today)
+- `--include-private` - Include private repositories (requires token with `repo` scope)
+- `--show-urls` - Display PR URLs in the output table
+- `--sort FIELD[:ORDER]` - Sort results by field (can be specified multiple times for multi-level sorting)
+  - Valid fields: `repository`, `state`, `created`, `merged`, `title`
+  - Valid orders: `asc`, `desc` (default varies by field)
+- `--token TOKEN` - Override the GitHub PAT from environment
+
+**Examples:**
+
+Show all PRs from the last year:
+
+```bash
+gitbrag list tedivm
+```
+
+Filter by date range:
+
+```bash
+gitbrag list tedivm --since 2024-12-14 --until 2025-12-14
+```
+
+Include private repositories:
+
+```bash
+gitbrag list tedivm --include-private
+```
+
+Sort by repository, then by merge date (newest first):
+
+```bash
+gitbrag list tedivm --sort repository --sort merged:desc
+```
+
+Show PR URLs:
+
+```bash
+gitbrag list tedivm --show-urls
+```
+
+**Output:**
+
+The command displays a formatted table with:
+
+- Repository name (owner/repo)
+- PR number
+- PR title
+- State (merged, open, or closed)
+- Created date
+- Merged date (or "-" if not merged)
+
+**Notes:**
+
+- Date filtering is based on **last activity** (updated time), not just creation date
+- PRs created earlier but merged/updated in the date range will be included
+- Authentication requires a GitHub Personal Access Token (see [GitHub API Integration](./github-api.md))
+
+### version - Show Version
+
+Display the current installed version of gitbrag.
+
+```bash
+gitbrag version
+```
+
+### hello - Friendly Greeting
+
+Display a friendly greeting message.
+
+```bash
+gitbrag hello
+```
+
 ## Configuration
 
 The CLI application is defined in `gitbrag/cli.py` and automatically configured as an entry point in `pyproject.toml`:

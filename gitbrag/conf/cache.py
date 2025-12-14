@@ -1,9 +1,14 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class CacheSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
     # Cache control
-    cache_enabled: bool = True
+    cache_enabled: bool = False
 
     # Redis configuration
     cache_redis_host: str | None = None

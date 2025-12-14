@@ -8,10 +8,96 @@ Create a brag list of open source contributions
 pip install gitbrag
 ```
 
-## CLI
+## Configuration
+
+Set your GitHub Personal Access Token:
 
 ```bash
-gitbrag --help
+export GITHUB_TOKEN="your_token_here"
+```
+
+Or create a `.env` file:
+
+```bash
+GITHUB_TOKEN=your_token_here
+```
+
+## CLI Usage
+
+List pull requests for a GitHub user:
+
+```bash
+gitbrag list <username> [OPTIONS]
+```
+
+### Options
+
+- `--since DATE` - Start date (ISO format, default: 365 days ago)
+- `--until DATE` - End date (ISO format, default: today)
+- `--include-private` - Include private repositories
+- `--show-urls` - Display PR URLs in output
+- `--sort FIELD[:ORDER]` - Sort by field (can be used multiple times)
+  - Valid fields: `repository`, `state`, `created`, `merged`, `title`
+  - Valid orders: `asc`, `desc` (default: `desc`)
+
+### Examples
+
+Show all PRs from the last year:
+
+```bash
+gitbrag list tedivm
+```
+
+Show PRs from a specific date range:
+
+```bash
+gitbrag list tedivm --since 2024-12-14 --until 2025-12-14
+```
+
+Sort by repository, then by merge date:
+
+```bash
+gitbrag list tedivm --since 2024-12-14 --until 2025-12-14 --sort repository --sort merged:desc
+```
+
+Example output:
+
+```text
+                                           Pull Requests
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Repository                 ┃ PR # ┃ Title                     ┃ State  ┃ Created    ┃ Merged     ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ TerraformInDepth/terrafor… │ 1    │ Version Upgrades          │ merged │ 2025-04-05 │ 2025-04-05 │
+│ TerraformInDepth/tofupy    │ 1    │ Update version, test      │ merged │ 2025-04-05 │ 2025-04-05 │
+│                            │      │ range of python versions  │        │            │            │
+│ TerraformInDepth/tofupy    │ 5    │ Improve Documentation     │ merged │ 2025-08-02 │ 2025-08-02 │
+│ tedious/JShrink            │ 149  │ Update PHP versions in CI │ merged │ 2025-11-20 │ 2025-11-20 │
+│                            │      │ workflow                  │        │            │            │
+│ tedious/Stash              │ 429  │ Update tested versions of │ merged │ 2024-12-18 │ 2024-12-18 │
+│                            │      │ php                       │        │            │            │
+│ tedious/Stash              │ 435  │ Update PHP versions in    │ open   │ 2025-11-20 │ -          │
+│                            │      │ GitHub Actions workflow   │        │            │            │
+│ tedivm/paracelsus          │ 39   │ Lock down pydot to v3     │ merged │ 2025-08-20 │ 2025-08-20 │
+│ tedivm/paracelsus          │ 44   │ Run test suite against    │ merged │ 2025-10-10 │ 2025-10-10 │
+│                            │      │ 3.14                      │        │            │            │
+│ tedivm/paracelsus          │ 47   │ Drop tests and docs from  │ merged │ 2025-11-22 │ 2025-11-22 │
+│                            │      │ wheel build               │        │            │            │
+│ tedivm/paracelsus          │ 52   │ Switch delimiter for      │ merged │ 2025-12-14 │ 2025-12-14 │
+│                            │      │ column parameters in      │        │            │            │
+│                            │      │ Mermaid                   │        │            │            │
+│ tedivm/paracelsus          │ 53   │ Support PyDot v3 and v4   │ merged │ 2025-12-14 │ 2025-12-14 │
+│ tedivm/quasiqueue          │ 15   │ Run Test Suite against    │ merged │ 2025-10-10 │ 2025-10-10 │
+│                            │      │ Python 3.14               │        │            │            │
+│ tedivm/robs_awesome_pytho… │ 15   │ fix pytest workflow       │ merged │ 2025-04-11 │ 2025-04-11 │
+│                            │      │ rendering                 │        │            │            │
+│ tedivm/robs_awesome_pytho… │ 16   │ Add template test suite   │ merged │ 2025-04-11 │ 2025-04-11 │
+│ tedivm/robs_awesome_pytho… │ 19   │ Caching, Testing, and     │ merged │ 2025-11-27 │ 2025-11-27 │
+│                            │      │ Documentation Updates     │        │            │            │
+│ tedivm/skysnoop            │ 4    │ Create a high level       │ merged │ 2025-11-30 │ 2025-11-30 │
+│                            │      │ unified client            │        │            │            │
+└────────────────────────────┴──────┴───────────────────────────┴────────┴────────────┴────────────┘
+
+Total: 16 pull requests
 ```
 
 ## Developer Documentation

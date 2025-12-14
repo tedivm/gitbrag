@@ -1,0 +1,188 @@
+import asyncio
+from datetime import datetime
+from functools import partial
+from logging import getLogger
+
+from github import Github, GithubException
+
+from .models import PullRequestInfo
+
+logger = getLogger(__name__)
+
+
+class PullRequestCollector:
+    """Service for collecting user's pull requests from GitHub."""
+
+    def __init__(self, github_client: Github) -> None:
+        """Initialize PR collector with authenticated GitHub client.
+
+        Args:
+            github_client: Authenticated PyGithub client
+        """
+        self.github_client = github_client
+
+    async def collect_user_prs(
+        self,
+        username: str,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        include_private: bool = False,
+    ) -> list[PullRequestInfo]:
+        """Collect all pull requests created by the user.
+
+        Args:
+            username: GitHub username to query
+            since: Start date for filtering (inclusive)
+            until: End date for filtering (inclusive)
+            include_private: Whether to include private repositories
+
+        Returns:
+            List of PullRequestInfo objects
+
+        Raises:
+            GithubException: If GitHub API returns an error
+            ValueError: If user not found or permission denied
+        """
+        # Run the blocking GitHub API calls in a thread pool
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._collect_user_prs_sync, username, since, until, include_private)
+
+    def _collect_user_prs_sync(
+        self,
+        username: str,
+        since: datetime | None,
+        until: datetime | None,
+        include_private: bool,
+    ) -> list[PullRequestInfo]:
+        """Synchronous implementation of PR collection.
+        
+        This is separated to run in a thread pool via run_in_executor.
+        """
+        try:
+            # Get the user
+            user = self.github_client.get_user(username)
+
+            # Verify user exists by accessing a property
+            _ = user.login
+
+            logger.info(f"Collecting pull requests for user: {username}")
+
+            # Query for pull requests using GitHub search
+            # Format: is:pr author:username
+            query_parts = ["is:pr", f"author:{username}"]
+
+            # Add date filters if provided
+            if since:
+                query_parts.append(f"created:>={since.strftime('%Y-%m-%d')}")
+            if until:
+                query_parts.append(f"created:<={until.strftime('%Y-%m-%d')}")
+
+            # Note: GitHub search API doesn't support filtering by repository visibility
+            # We'll filter after retrieving if needed
+            query = " ".join(query_parts)
+
+            logger.debug(f"GitHub search query: {query}")
+
+            # Execute search
+            issues = self.github_client.search_issues(query=query, sort="created", order="desc")
+
+            # Convert to PullRequestInfo objects
+            pull_requests: list[PullRequestInfo] = []
+
+            # Get all issues as a list to avoid paginated lazy loading during iteration
+            issues_list = list(issues)
+            
+            for issue in issues_list:
+                try:
+                    # GitHub search returns issues with embedded PR data
+                    # Access ONLY raw_data to completely avoid lazy-loading API calls
+                    raw = issue.raw_data
+                    
+                    # Check if this is actually a PR
+                    if "pull_request" not in raw or raw["pull_request"] is None:
+                        continue
+                    
+                    # Extract all data from raw_data dict to avoid any property access
+                    repo_url = raw.get("repository_url", "")
+                    if repo_url:
+                        repo_full_name = "/".join(repo_url.split("/")[-2:])
+                    else:
+                        # Fallback: parse from html_url
+                        html_url = raw.get("html_url", "")
+                        url_parts = html_url.split("/")
+                        repo_full_name = f"{url_parts[3]}/{url_parts[4]}"
+                    
+                    # Extract organization from repository full name
+                    repo_parts = repo_full_name.split("/")
+                    organization = repo_parts[0] if len(repo_parts) > 1 else ""
+
+                    # Get PR metadata from raw data
+                    pr_data = raw.get("pull_request", {})
+                    merged_at = None
+                    if pr_data.get("merged_at"):
+                        # Parse the timestamp if present
+                        from datetime import datetime as dt
+                        try:
+                            merged_at = dt.strptime(pr_data["merged_at"], "%Y-%m-%dT%H:%M:%SZ")
+                        except ValueError:
+                            # Handle timezone-aware timestamps
+                            merged_at = dt.fromisoformat(pr_data["merged_at"].replace("Z", "+00:00"))
+                    
+                    # Parse closed_at from raw data
+                    closed_at = None
+                    if raw.get("closed_at"):
+                        from datetime import datetime as dt
+                        try:
+                            closed_at = dt.strptime(raw["closed_at"], "%Y-%m-%dT%H:%M:%SZ")
+                        except ValueError:
+                            closed_at = dt.fromisoformat(raw["closed_at"].replace("Z", "+00:00"))
+                    
+                    # Parse created_at from raw data
+                    created_at = dt.strptime(raw["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                    
+                    # Get author from user object in raw data
+                    author = raw.get("user", {}).get("login", "unknown")
+                    
+                    pr_info = PullRequestInfo(
+                        number=raw.get("number"),
+                        title=raw.get("title"),
+                        repository=repo_full_name,
+                        url=raw.get("html_url"),
+                        state=raw.get("state"),
+                        created_at=created_at,
+                        merged_at=merged_at,
+                        closed_at=closed_at,
+                        author=author,
+                        organization=organization,
+                    )
+
+                    pull_requests.append(pr_info)
+
+                except (KeyError, IndexError, ValueError) as parse_error:
+                    # Log parsing errors but continue processing
+                    logger.warning(f"Error parsing issue data: {parse_error}")
+                    continue
+                except Exception as e:
+                    # Log unexpected errors but continue processing
+                    logger.warning(f"Unexpected error processing issue: {e}")
+                    continue
+
+            logger.info(f"Collected {len(pull_requests)} pull requests")
+
+            return pull_requests
+
+        except GithubException as e:
+            if e.status == 404:
+                raise ValueError(f"User '{username}' not found on GitHub")
+            elif e.status == 403:
+                error_msg = "Permission denied. Check your GitHub token permissions."
+                if e.data and isinstance(e.data, dict) and "message" in e.data:
+                    error_msg = f"{error_msg} GitHub says: {e.data['message']}"
+                raise ValueError(error_msg)
+            else:
+                logger.exception(f"GitHub API error: {e}")
+                raise
+
+        except Exception as e:
+            logger.exception(f"Error collecting pull requests: {e}")
+            raise

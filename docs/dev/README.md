@@ -25,6 +25,10 @@ FastAPI web framework, endpoints, middleware, and API development.
 
 Command-line interface built with Typer for management and automation tasks.
 
+### [GitHub API Integration](./github-api.md)
+
+GitHub API integration for collecting pull requests with authentication, rate limiting, and pagination.
+
 ### [Templates](./templates.md)
 
 Jinja2 templating for HTML rendering and template-based content generation.

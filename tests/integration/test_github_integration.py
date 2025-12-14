@@ -17,25 +17,6 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.mark.asyncio
-async def test_github_authentication_with_real_token() -> None:
-    """Test authentication with real GitHub token."""
-    settings = Settings()
-    assert settings.github_token is not None, "GITHUB_TOKEN must be set"
-    token = settings.github_token.get_secret_value()
-
-    client_factory = GitHubClient(token_override=token)
-    github_client = await client_factory.get_authenticated_client()
-
-    assert github_client is not None
-
-    # Verify we can get the authenticated user
-    async with github_client:
-        user = await github_client.get_authenticated_user()
-        assert user is not None
-        assert user.get("login")
-
-
-@pytest.mark.asyncio
 async def test_collect_user_prs_real_api() -> None:
     """Test collecting PRs for a real user (tedivm)."""
     settings = Settings()

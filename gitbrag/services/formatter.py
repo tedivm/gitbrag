@@ -46,7 +46,7 @@ def format_pr_list(
     # Create table
     table = Table(title="Pull Requests", show_header=True, header_style="bold magenta")
 
-    table.add_column("Repository", style="blue")
+    table.add_column("Repository", style="white")
     table.add_column("PR #", style="cyan", no_wrap=True)
     table.add_column("Title", style="white")
     table.add_column("State", style="white", no_wrap=True)

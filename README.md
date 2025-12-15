@@ -8,6 +8,12 @@ Create a brag list of open source contributions
 pip install gitbrag
 ```
 
+Or run directly with `uvx` without installing:
+
+```bash
+uvx gitbrag list <username>
+```
+
 ## Configuration
 
 Set your GitHub Personal Access Token:

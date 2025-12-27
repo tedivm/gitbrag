@@ -459,3 +459,102 @@ def test_list_command_combined_flags(
     format_kwargs = mock_format.call_args.kwargs
     assert format_kwargs["show_urls"] is True
     assert format_kwargs["sort_fields"] == [("repository", "asc")]
+
+
+def test_cache_configured_on_cli_import() -> None:
+    """Test that caches are configured when CLI module is imported."""
+    from aiocache import caches
+
+    # Re-configure caches by calling configure_caches directly
+    # (since cli module might already be imported and cached)
+    from gitbrag.services.cache import configure_caches
+
+    configure_caches()
+
+    # Verify that cache aliases are configured
+    cache_config = caches.get_config()
+    assert "default" in cache_config
+    assert "memory" in cache_config
+    assert "persistent" in cache_config
+
+    # Verify we can get each cache without error
+    default_cache = caches.get("default")
+    assert default_cache is not None
+
+    memory_cache = caches.get("memory")
+    assert memory_cache is not None
+
+    persistent_cache = caches.get("persistent")
+    assert persistent_cache is not None
+
+
+def test_parse_date_returns_timezone_aware() -> None:
+    """Test that _parse_date returns timezone-aware datetimes."""
+    from datetime import timezone
+
+    from gitbrag.cli import _parse_date
+
+    # Test with None (default)
+    default_date = _parse_date(None, default_days_ago=365)
+    assert default_date.tzinfo is not None
+    assert default_date.tzinfo == timezone.utc
+
+    # Test with ISO string (naive)
+    parsed_date = _parse_date("2024-12-15", default_days_ago=0)
+    assert parsed_date.tzinfo is not None
+    assert parsed_date.tzinfo == timezone.utc
+
+    # Test with ISO string (aware)
+    parsed_aware = _parse_date("2024-12-15T10:30:00+00:00", default_days_ago=0)
+    assert parsed_aware.tzinfo is not None
+
+
+def test_parse_date_naive_assumed_utc() -> None:
+    """Test that naive date strings are assumed to be UTC."""
+    from datetime import timezone
+
+    from gitbrag.cli import _parse_date
+
+    parsed = _parse_date("2024-12-15T10:30:00", default_days_ago=0)
+    assert parsed.tzinfo == timezone.utc
+    assert parsed.year == 2024
+    assert parsed.month == 12
+    assert parsed.day == 15
+    assert parsed.hour == 10
+    assert parsed.minute == 30
+
+
+@patch("gitbrag.cli.format_pr_list")
+@patch("gitbrag.cli.PullRequestCollector")
+@patch("gitbrag.cli.GitHubClient")
+def test_list_command_dates_are_timezone_aware(
+    mock_client_class: MagicMock,
+    mock_collector_class: MagicMock,
+    mock_format: MagicMock,
+    mock_sample_prs: list[PullRequestInfo],
+) -> None:
+    """Test that dates passed to collector are timezone-aware."""
+    from datetime import timezone
+
+    mock_client_instance = MagicMock()
+    mock_github = MagicMock()
+    mock_client_instance.get_authenticated_client = AsyncMock(return_value=mock_github)
+    mock_client_class.return_value = mock_client_instance
+
+    mock_collector = MagicMock()
+    mock_collector.collect_user_prs = AsyncMock(return_value=mock_sample_prs)
+    mock_collector_class.return_value = mock_collector
+
+    result = runner.invoke(app, ["list", "testuser", "--since", "2024-01-01", "--until", "2024-12-31"])
+
+    assert result.exit_code == 0
+
+    # Verify dates passed to collector are timezone-aware
+    collector_kwargs = mock_collector.collect_user_prs.call_args.kwargs
+    since_date = collector_kwargs["since"]
+    until_date = collector_kwargs["until"]
+
+    assert since_date.tzinfo is not None
+    assert since_date.tzinfo == timezone.utc
+    assert until_date.tzinfo is not None
+    assert until_date.tzinfo == timezone.utc

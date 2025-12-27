@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -212,7 +212,7 @@ async def test_collect_user_prs_empty_results(
     mock_github_client.search_all_issues.return_value = []
 
     collector = PullRequestCollector(mock_github_client)
-    prs = await collector.collect_user_prs(username="testuser")
+    prs = await collector.collect_user_prs(username="nonexistent")
 
     assert len(prs) == 0
 
@@ -240,3 +240,171 @@ async def test_collect_user_prs_organization_extraction(
     prs = await collector.collect_user_prs(username="testuser")
 
     assert prs[0].organization == "my-org"
+
+
+@pytest.mark.asyncio
+async def test_collect_user_prs_with_star_increase(
+    mock_github_client: AsyncMock,
+) -> None:
+    """Test PR collection with star increase enabled."""
+    mock_github_client.search_all_issues.return_value = [
+        {
+            "number": 123,
+            "title": "Test PR",
+            "state": "closed",
+            "created_at": "2024-01-01T12:00:00Z",
+            "closed_at": "2024-01-02T12:00:00Z",
+            "html_url": "https://github.com/owner/repo/pull/123",
+            "repository_url": "https://api.github.com/repos/owner/repo",
+            "user": {"login": "testuser"},
+            "pull_request": {"merged_at": "2024-01-02T12:00:00Z"},
+        }
+    ]
+
+    with patch(
+        "gitbrag.services.github.pullrequests.collect_repository_star_increases", new_callable=AsyncMock
+    ) as mock_collect:
+        mock_collect.return_value = {"owner/repo": 42}
+
+        collector = PullRequestCollector(mock_github_client)
+        since = datetime(2024, 1, 1)
+        until = datetime(2024, 12, 31)
+
+        prs = await collector.collect_user_prs(
+            username="testuser",
+            since=since,
+            until=until,
+            include_star_increase=True,
+        )
+
+        assert len(prs) == 1
+        assert prs[0].star_increase == 42
+        mock_collect.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_collect_user_prs_without_star_increase(
+    mock_github_client: AsyncMock,
+) -> None:
+    """Test PR collection with star increase disabled."""
+    mock_github_client.search_all_issues.return_value = [
+        {
+            "number": 123,
+            "title": "Test PR",
+            "state": "closed",
+            "created_at": "2024-01-01T12:00:00Z",
+            "closed_at": "2024-01-02T12:00:00Z",
+            "html_url": "https://github.com/owner/repo/pull/123",
+            "repository_url": "https://api.github.com/repos/owner/repo",
+            "user": {"login": "testuser"},
+            "pull_request": {"merged_at": "2024-01-02T12:00:00Z"},
+        }
+    ]
+
+    with patch(
+        "gitbrag.services.github.pullrequests.collect_repository_star_increases", new_callable=AsyncMock
+    ) as mock_collect:
+        collector = PullRequestCollector(mock_github_client)
+        since = datetime(2024, 1, 1)
+        until = datetime(2024, 12, 31)
+
+        prs = await collector.collect_user_prs(
+            username="testuser",
+            since=since,
+            until=until,
+            include_star_increase=False,
+        )
+
+        assert len(prs) == 1
+        assert prs[0].star_increase is None
+        # Shouldn't call star collection when disabled
+        mock_collect.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_collect_user_prs_star_increase_deduplicates_repos(
+    mock_github_client: AsyncMock,
+) -> None:
+    """Test that duplicate repositories are deduplicated when collecting star increases."""
+    mock_github_client.search_all_issues.return_value = [
+        {
+            "number": 123,
+            "title": "Test PR 1",
+            "state": "closed",
+            "created_at": "2024-01-01T12:00:00Z",
+            "closed_at": "2024-01-02T12:00:00Z",
+            "html_url": "https://github.com/owner/repo/pull/123",
+            "repository_url": "https://api.github.com/repos/owner/repo",
+            "user": {"login": "testuser"},
+            "pull_request": {"merged_at": "2024-01-02T12:00:00Z"},
+        },
+        {
+            "number": 456,
+            "title": "Test PR 2",
+            "state": "closed",
+            "created_at": "2024-02-01T12:00:00Z",
+            "closed_at": "2024-02-02T12:00:00Z",
+            "html_url": "https://github.com/owner/repo/pull/456",
+            "repository_url": "https://api.github.com/repos/owner/repo",
+            "user": {"login": "testuser"},
+            "pull_request": {"merged_at": "2024-02-02T12:00:00Z"},
+        },
+    ]
+
+    with patch(
+        "gitbrag.services.github.pullrequests.collect_repository_star_increases", new_callable=AsyncMock
+    ) as mock_collect:
+        mock_collect.return_value = {"owner/repo": 42}
+
+        collector = PullRequestCollector(mock_github_client)
+        since = datetime(2024, 1, 1)
+        until = datetime(2024, 12, 31)
+
+        prs = await collector.collect_user_prs(
+            username="testuser",
+            since=since,
+            until=until,
+            include_star_increase=True,
+        )
+
+        assert len(prs) == 2
+        # Should call with unique repositories only
+        call_args = mock_collect.call_args
+        repositories = call_args.kwargs["repositories"]
+        assert len(repositories) == 1
+        assert "owner/repo" in repositories
+
+
+@pytest.mark.asyncio
+async def test_collect_user_prs_star_increase_without_dates(
+    mock_github_client: AsyncMock,
+) -> None:
+    """Test that star increase is not collected without since/until dates."""
+    mock_github_client.search_all_issues.return_value = [
+        {
+            "number": 123,
+            "title": "Test PR",
+            "state": "closed",
+            "created_at": "2024-01-01T12:00:00Z",
+            "closed_at": "2024-01-02T12:00:00Z",
+            "html_url": "https://github.com/owner/repo/pull/123",
+            "repository_url": "https://api.github.com/repos/owner/repo",
+            "user": {"login": "testuser"},
+            "pull_request": {"merged_at": "2024-01-02T12:00:00Z"},
+        }
+    ]
+
+    with patch(
+        "gitbrag.services.github.pullrequests.collect_repository_star_increases", new_callable=AsyncMock
+    ) as mock_collect:
+        collector = PullRequestCollector(mock_github_client)
+
+        prs = await collector.collect_user_prs(
+            username="testuser",
+            include_star_increase=True,  # Enabled but no dates
+        )
+
+        assert len(prs) == 1
+        assert prs[0].star_increase is None
+        # Shouldn't call star collection without date range
+        mock_collect.assert_not_called()

@@ -93,58 +93,19 @@ The system MUST provide a CLI option to display PR URLs in the output, defaultin
 
 The system MUST provide sorting options with support for multiple sort fields, allowing users to organize results by different criteria.
 
-#### Scenario: Sort by default (created date descending)
-
-**Given** the user has configured authentication
-**When** the user runs `gitbrag list octocat` without sort options
-**Then** the results are sorted by creation date in descending order (newest first)
-**And** the most recent PRs appear at the top of the list
-
-#### Scenario: Sort by single field
-
-**Given** the user has configured authentication
-**When** the user runs `gitbrag list octocat --sort repository`
-**Then** the results are sorted alphabetically by repository name
-**And** PRs are grouped together by repository
-
-#### Scenario: Sort by multiple fields with primary and secondary sort
-
-**Given** the user has configured authentication
-**When** the user runs `gitbrag list octocat --sort repository --sort merged`
-**Then** the results are sorted first by repository name alphabetically
-**And** within each repository, PRs are sorted by merge date
-**And** unmerged PRs appear after merged PRs within each repository
-
-#### Scenario: Sort with explicit order direction
-
-**Given** the user has configured authentication
-**When** the user runs `gitbrag list octocat --sort repository:asc --sort created:desc`
-**Then** the results are sorted by repository in ascending order (A-Z)
-**And** within each repository, PRs are sorted by created date descending (newest first)
-
-#### Scenario: Sort by state with custom ordering
-
-**Given** the user has configured authentication
-**When** the user runs `gitbrag list octocat --sort state --sort created`
-**Then** the results are grouped by state (merged, open, closed)
-**And** within each state group, PRs are sorted by creation date
+**Changes**: Added "stars" as a valid sort field when --show-stars is enabled.
 
 #### Scenario: Handle invalid sort field
 
 **Given** the user provides an invalid sort field
 **When** the user runs `gitbrag list octocat --sort invalid_field`
 **Then** the system raises a validation error
-**And** the error message lists valid sort fields (repository, state, created, merged, title)
+**And** the error message lists valid sort fields (repository, state, created, merged, title, stars)
+**And** the error message indicates that "stars" requires the --show-star-increase flag
 **And** the error message provides an example of correct usage
 **And** the command exits with status code 1
 
-#### Scenario: Handle invalid sort direction
-
-**Given** the user provides an invalid sort direction
-**When** the user runs `gitbag list octocat --sort repository:invalid`
-**Then** the system raises a validation error
-**And** the error message explains valid directions are 'asc' and 'desc'
-**And** the command exits with status code 1
+Note: "stars" is only valid when --show-star-increase flag is provided
 
 ### Requirement: Repository visibility filtering
 
@@ -211,89 +172,28 @@ The system MUST validate date inputs and provide clear error messages for invali
 
 The system MUST format pull request information in a clear, readable, and visually appealing terminal output using Rich library for enhanced display.
 
-#### Scenario: Display PR list with formatted output including PR numbers
+**Changes**: Added optional Star Increase column when --show-star-increase flag is provided.
 
-**Given** a successful query returning multiple PRs
-**When** the system formats the output
-**Then** the output includes a styled header with username and date range
-**And** each PR is displayed with PR number, title, repository, state, and date
-**And** PR numbers are clearly visible (e.g., "#42")
-**And** PRs are grouped by repository with clear visual separation
-**And** the output uses colors to distinguish different states (merged, open, closed)
-**And** the output includes a summary footer with total count of PRs
-
-#### Scenario: Use Rich tables for structured display
+#### Scenario: Display star increase in formatted table
 
 **Given** a successful query returning PRs
-**When** the system formats the output with default settings
-**Then** PRs are displayed in a Rich table with columns
-**And** the table includes columns for PR number, state, title, repository, and date
-**And** the table does not include a URL column by default
-**And** the table is automatically sized to fit terminal width
-**And** the table uses appropriate padding and borders for readability
+**And** the user has passed the --show-star-increase flag with a date range
+**When** the system formats the output
+**Then** PRs are displayed in a Rich table with all standard columns
+**And** the table includes an additional "Star Increase" column after the repository column
+**And** star increases are displayed with "+" prefix for positive values (e.g., "+123")
+**And** zero star increase is displayed as "0" or "+0"
+**And** the table adjusts column widths to accommodate star increase data
+**And** repositories with unavailable star data show "-" in the Star Increase column
 
-#### Scenario: Display URLs when requested via flag
+#### Scenario: Hide star increase by default for cleaner output
 
 **Given** a successful query returning PRs
-**And** the user has passed the --show-urls flag
+**And** the user has not passed the --show-star-increase flag
 **When** the system formats the output
-**Then** PRs are displayed in a Rich table with columns
-**And** the table includes an additional URL column
-**And** each row shows the full GitHub URL for the PR
-**And** the table adjusts column widths to accommodate URLs
-
-#### Scenario: Hide URLs by default for cleaner output
-
-**Given** a successful query returning PRs
-**And** the user has not passed the --show-urls flag
-**When** the system formats the output
-**Then** the table does not include a URL column
-**And** the output is more compact and easier to scan
-**And** PR numbers provide sufficient reference for finding PRs
-
-#### Scenario: Apply color coding to PR states
-
-**Given** PRs with different states (merged, open, closed)
-**When** displaying the results
-**Then** merged PRs are displayed in green or with a green indicator
-**And** open PRs are displayed in blue or with a blue indicator
-**And** closed PRs are displayed in yellow/orange or with an appropriate indicator
-**And** color choices follow common terminal conventions
-
-#### Scenario: Display empty results with styled message
-
-**Given** a query returning no pull requests
-**When** the system formats the output
-**Then** the output shows a styled panel with username and date range
-**And** the panel includes a clearly formatted "No pull requests found" message
-**And** the output maintains visual consistency with non-empty results
-**And** the command exits successfully (not as an error)
-
-#### Scenario: Format dates consistently
-
-**Given** PRs with various creation and merge dates
-**When** displaying the results
-**Then** dates are formatted in readable format (YYYY-MM-DD)
-**And** relative time information is shown when helpful (e.g., "3 months ago")
-**And** date formatting is consistent across all PRs
-
-#### Scenario: Handle terminal width gracefully
-
-**Given** a PR with a long title or repository name
-**When** displaying the results in terminals of various widths
-**Then** content wraps or truncates appropriately for terminal width
-**And** table columns adjust to available space
-**And** the output remains readable in narrow terminals (>80 chars)
-**And** critical information (PR number, repository) is never truncated
-
-#### Scenario: Show progress indication for long operations
-
-**Given** a query that takes more than 2 seconds to complete
-**When** the system is fetching pull requests
-**Then** a progress spinner or indicator is displayed
-**And** the indicator shows the system is working
-**And** the indicator disappears when results are ready
-**And** the user is not left wondering if the command is frozen
+**Then** the table does not include a Star Increase column
+**And** the output remains compact and matches existing behavior
+**And** no star data is fetched or displayed
 
 ### Requirement: Error handling and user feedback
 
@@ -411,4 +311,123 @@ The system MUST organize CLI commands in a logical structure that supports futur
 **Then** the command structure accommodates additions
 **And** command names follow consistent patterns
 **And** the list command remains backward compatible
+
+### Requirement: Repository star count display
+
+The system MUST provide a CLI option to display star increase (stars gained during the time period) for repositories in the pull request report, defaulting to hiding this column for cleaner display.
+
+#### Scenario: Hide star increase by default
+
+**Given** the user has configured authentication
+**When** the user runs `gitbrag list octocat`
+**Then** the output displays PR information without a star increase column
+**And** the display remains compact and easy to scan
+**And** no additional GitHub API calls are made to fetch star data
+
+#### Scenario: Display star increase when flag is provided
+
+**Given** the user has configured authentication
+**And** the user specifies a date range with --since and --until
+**When** the user runs `gitbrag list octocat --show-star-increase --since 2024-01-01 --until 2024-12-31`
+**Then** the system uses GraphQL API to fetch stargazer timestamps for all unique repositories
+**And** the system counts stars added between 2024-01-01 and 2024-12-31 for each repository
+**And** the output displays a "Star Increase" column showing the delta (e.g., "+123")
+**And** the star increase reflects only stars gained during the specified time period
+
+#### Scenario: Display unavailable star increase as placeholder
+
+**Given** the user has configured authentication
+**And** the user runs `gitbrag list octocat --show-star-increase --since 2024-01-01 --until 2024-12-31`
+**When** star increase data cannot be fetched for a repository (deleted, permission denied, rate limit, etc.)
+**Then** the system displays "-" or "N/A" in the Star Increase column for that repository
+**And** the system logs a warning about the unavailable data
+**And** the command continues successfully for other repositories
+**And** the user is not blocked from seeing other data
+
+#### Scenario: Combine star increase flag with other options
+
+**Given** the user provides multiple flags
+**When** the user runs `gitbrag list octocat --show-star-increase --show-urls --include-private --since 2024-01-01`
+**Then** the output includes the Star Increase column as requested
+**And** all other flags work correctly together
+**And** the combined options produce expected filtered results with star increases
+
+#### Scenario: Fetch star increase data efficiently with early termination
+
+**Given** a repository gained 1000 stars total, with 200 during the period and 800 before
+**And** stargazers are returned in chronological order (oldest first)
+**When** the system fetches star increase data
+**Then** the system uses GraphQL pagination to scan through stargazers
+**And** the system counts stars with `starredAt` within the date range
+**And** the system stops fetching when `starredAt` is before the `since` date (early termination)
+**And** the system minimizes API calls by not fetching all historical stargazers unnecessarily
+
+### Requirement: Repository star count sorting
+
+The system MUST provide sorting capability by repository star increase when star data is displayed.
+
+#### Scenario: Sort by star increase descending
+
+**Given** the user has configured authentication
+**And** the user has enabled star increase display
+**When** the user runs `gitbrag list octocat --show-star-increase --sort stars:desc --since 2024-01-01`
+**Then** the results are sorted by star increase in descending order (highest growth first)
+**And** PRs from repositories with more star growth appear first
+**And** PRs from the same repository maintain their relative order
+
+#### Scenario: Sort by star increase ascending
+
+**Given** the user has configured authentication
+**And** the user has enabled star increase display
+**When** the user runs `gitbrag list octocat --show-star-increase --sort stars:asc --since 2024-01-01`
+**Then** the results are sorted by star increase in ascending order (lowest growth first)
+**And** PRs from repositories with less star growth appear first
+
+#### Scenario: Combine star sorting with other sort fields
+
+**Given** the user has configured authentication
+**When** the user runs `gitbrag list octocat --show-star-increase --sort repository --sort stars:desc --since 2024-01-01`
+**Then** the results are sorted first by repository name alphabetically
+**And** within each repository group, PRs are sub-sorted by star increase descending
+**And** multi-field sorting works correctly
+
+#### Scenario: Handle star sorting without flag
+
+**Given** the user has not enabled star increase display
+**When** the user runs `gitbrag list octocat --sort stars:desc --since 2024-01-01` (without --show-star-increase)
+**Then** the system raises a validation error
+**And** the error message explains that --show-star-increase is required to sort by stars
+**And** the error suggests adding the --show-star-increase flag
+**And** the command exits with status code 1
+
+### Requirement: Repository star count caching
+
+The system MUST cache repository star increase calculations to minimize redundant API calls and improve performance for repeated queries.
+
+#### Scenario: Cache star increase for reuse
+
+**Given** the user has configured authentication
+**And** the user runs `gitbrag list octocat --show-star-increase --since 2024-01-01 --until 2024-12-31`
+**When** the user runs the same command again within the cache TTL period
+**Then** the system uses cached star increase data
+**And** no additional GraphQL queries are made for star data
+**And** the output displays the same star increases as before
+
+#### Scenario: Respect cache TTL
+
+**Given** the user has configured authentication
+**And** the user ran `gitbrag list octocat --show-star-increase --since 2024-01-01` more than 24 hours ago
+**When** the user runs the command again
+**Then** the system fetches fresh star increase data from GitHub GraphQL API
+**And** the cache is updated with new values
+**And** the output displays current star increases
+
+#### Scenario: Cache works across different queries with same date range
+
+**Given** the user queries PRs from user A who contributed to repos X, Y, Z in 2024
+**And** the user then queries PRs from user B who also contributed to repos Y, Z in 2024
+**When** both queries use the same date range and are run with --show-star-increase within cache TTL
+**Then** the system reuses cached star increase data for repos Y and Z
+**And** the system only fetches fresh data for repo X (unique to user A query)
+**And** performance is improved for overlapping repositories and date ranges
 

@@ -8,10 +8,14 @@ from typing import Any
 import typer
 from rich.console import Console
 
+from .services.cache import configure_caches
 from .services.formatter import format_pr_list, show_progress
 from .services.github.auth import GitHubClient
 from .services.github.pullrequests import PullRequestCollector
 from .settings import settings
+
+# Configure caches on module load
+configure_caches()
 
 app = typer.Typer()
 logger = getLogger(__name__)
@@ -74,10 +78,15 @@ async def list_contributions(
         "--show-urls",
         help="Display PR URLs in output",
     ),
+    show_star_increase: bool = typer.Option(
+        False,
+        "--show-star-increase",
+        help="Display star increase (stars gained during time period) for repositories",
+    ),
     sort: list[str] | None = typer.Option(
         None,
         "--sort",
-        help="Sort fields (format: field or field:asc/desc). Can be specified multiple times. Valid fields: repository, state, created, merged, title",
+        help="Sort fields (format: field or field:asc/desc). Can be specified multiple times. Valid fields: repository, state, created, merged, title, stars",
     ),
 ) -> None:
     """List pull requests for a GitHub user across all organizations."""
@@ -92,7 +101,7 @@ async def list_contributions(
             raise typer.Exit(1)
 
         # Parse and validate sort fields
-        sort_fields = _parse_sort_fields(sort)
+        sort_fields = _parse_sort_fields(sort, show_star_increase)
 
         # Authenticate with GitHub
         with show_progress("Authenticating with GitHub..."):
@@ -108,10 +117,15 @@ async def list_contributions(
                     since=since_date,
                     until=until_date,
                     include_private=include_private,
+                    include_star_increase=show_star_increase,
                 )
 
         # Format and display results
-        format_pr_list(pull_requests, show_urls=show_urls, sort_fields=sort_fields)
+        format_pr_list(
+            pull_requests,
+            show_urls=show_urls,
+            sort_fields=sort_fields,
+        )
 
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
@@ -130,27 +144,34 @@ def _parse_date(date_str: str | None, default_days_ago: int) -> datetime:
         default_days_ago: Days ago to use if date_str is None
 
     Returns:
-        Parsed datetime
+        Parsed datetime (timezone-aware UTC)
 
     Raises:
         ValueError: If date string is invalid
     """
+    from datetime import timezone
+
     if date_str is None:
-        return datetime.now() - timedelta(days=default_days_ago)
+        return datetime.now(timezone.utc) - timedelta(days=default_days_ago)
 
     try:
-        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        # If the parsed datetime is naive, assume UTC
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed
     except ValueError as e:
         raise ValueError(
             f"Invalid date format: {date_str}. Expected ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)"
         ) from e
 
 
-def _parse_sort_fields(sort: list[str] | None) -> list[tuple[str, str]]:
+def _parse_sort_fields(sort: list[str] | None, show_star_increase: bool = False) -> list[tuple[str, str]]:
     """Parse sort field specifications.
 
     Args:
         sort: List of sort specs (e.g., ["repository:asc", "created:desc"])
+        show_star_increase: Whether star increase display is enabled
 
     Returns:
         List of (field, direction) tuples
@@ -161,7 +182,7 @@ def _parse_sort_fields(sort: list[str] | None) -> list[tuple[str, str]]:
     if not sort:
         return [("created_at", "desc")]
 
-    valid_fields = {"repository", "state", "created", "merged", "title"}
+    valid_fields = {"repository", "state", "created", "merged", "title", "stars"}
     valid_directions = {"asc", "desc"}
 
     parsed_fields: list[tuple[str, str]] = []
@@ -181,6 +202,10 @@ def _parse_sort_fields(sort: list[str] | None) -> list[tuple[str, str]]:
             field = "created_at"
         elif field == "merged":
             field = "merged_at"
+
+        # Validate stars field requires --show-star-increase
+        if field == "stars" and not show_star_increase:
+            raise ValueError("Sorting by 'stars' requires --show-star-increase flag")
 
         if field not in valid_fields and field not in {"created_at", "merged_at"}:
             raise ValueError(f"Invalid sort field: {field}. Valid fields: {', '.join(sorted(valid_fields))}")

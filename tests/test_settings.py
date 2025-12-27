@@ -110,6 +110,7 @@ def test_all_required_attributes_present():
         "cache_redis_port",
         "cache_default_ttl",
         "cache_persistent_ttl",
+        "cache_star_increase_ttl",
     ]
 
     for attr in required_attrs:
@@ -160,3 +161,16 @@ def test_settings_validates_types():
     assert isinstance(test_settings.cache_enabled, bool)
     assert isinstance(test_settings.cache_redis_port, int)
     assert isinstance(test_settings.cache_default_ttl, int)
+    assert isinstance(test_settings.cache_star_increase_ttl, int)
+
+
+def test_cache_star_increase_ttl_attribute():
+    """Test that cache_star_increase_ttl attribute exists."""
+    assert hasattr(settings, "cache_star_increase_ttl")
+    assert isinstance(settings.cache_star_increase_ttl, int)
+
+
+def test_cache_star_increase_ttl_value():
+    """Test that cache_star_increase_ttl has the correct default value."""
+    test_settings = Settings()
+    assert test_settings.cache_star_increase_ttl == 86400  # 24 hours

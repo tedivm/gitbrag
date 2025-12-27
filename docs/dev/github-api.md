@@ -118,6 +118,12 @@ Show PR URLs in output:
 gitbrag list username --show-urls
 ```
 
+Show repository star increases during the filtered period:
+
+```bash
+gitbrag list username --since 2024-12-14 --show-star-increase
+```
+
 ### Sorting Results
 
 Sort by one or more fields:
@@ -131,6 +137,9 @@ gitbrag list username --sort merged:desc
 
 # Multi-field sort: repository, then by merge date
 gitbrag list username --sort repository --sort merged:desc
+
+# Sort by star increase (requires --show-star-increase)
+gitbrag list username --show-star-increase --sort stars:desc
 ```
 
 Valid sort fields:
@@ -140,6 +149,7 @@ Valid sort fields:
 - `created` - Creation date
 - `merged` - Merge date
 - `title` - PR title
+- `stars` - Repository star increase (requires `--show-star-increase` flag)
 
 Valid sort orders:
 
@@ -161,6 +171,43 @@ Query components:
 - `is:pr` - Filter to pull requests only
 - `author:username` - Filter by PR author
 - `updated:YYYY-MM-DD..YYYY-MM-DD` - Filter by last update/activity time
+
+### GitHub GraphQL API
+
+For star increase data, the integration uses GitHub's [GraphQL API](https://docs.github.com/en/graphql) to fetch stargazer timestamps:
+
+```graphql
+query($owner: String!, $name: String!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
+    stargazers(first: 100, after: $cursor, orderBy: {field: STARRED_AT, direction: DESC}) {
+      edges {
+        starredAt
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+}
+```
+
+**Optimization Strategy:**
+
+- **Pagination**: Fetches 100 stargazers per page
+- **DESC Ordering**: Most recent stars first enables early termination
+- **Early Termination**: Stops fetching when `starredAt < since` date
+- **Concurrent Fetching**: Multiple repositories fetched in parallel
+- **Deduplication**: Unique repositories extracted from PR list
+- **Caching**: Results cached for 24 hours to minimize API calls
+
+**Rate Limiting:**
+
+GraphQL shares the same rate limits as REST API (5,000 requests/hour). The client implements:
+
+- Automatic retry with exponential backoff on 429/403 responses
+- Optional wait for rate limit reset (`wait_for_rate_limit` parameter)
+- Cache to avoid redundant queries for same repositories
 
 ### Rate Limiting
 

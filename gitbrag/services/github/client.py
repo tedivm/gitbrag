@@ -217,3 +217,67 @@ class GitHubAPIClient:
         response.raise_for_status()
         result: dict[str, Any] = response.json()
         return result
+
+    async def execute_graphql(
+        self,
+        query: str,
+        variables: dict[str, Any] | None = None,
+        retry_count: int = 0,
+        max_retries: int = 3,
+    ) -> dict[str, Any]:
+        """Execute a GraphQL query against GitHub's GraphQL API.
+
+        Args:
+            query: GraphQL query string
+            variables: Optional dictionary of GraphQL variables
+            retry_count: Current retry attempt (internal use)
+            max_retries: Maximum number of retries for rate limiting
+
+        Returns:
+            GraphQL response data dictionary
+
+        Raises:
+            httpx.HTTPStatusError: If the HTTP request fails
+            ValueError: If GraphQL response contains errors
+        """
+        if not self._client:
+            raise RuntimeError("Client not initialized - use async with context manager")
+
+        payload: dict[str, Any] = {"query": query}
+        if variables:
+            payload["variables"] = variables
+
+        try:
+            response = await self._client.post("https://api.github.com/graphql", json=payload)
+            response.raise_for_status()
+            result: dict[str, Any] = response.json()
+
+            # Check for GraphQL errors
+            if "errors" in result:
+                error_messages = [error.get("message", str(error)) for error in result["errors"]]
+                raise ValueError(f"GraphQL errors: {'; '.join(error_messages)}")
+
+            return result
+
+        except httpx.HTTPStatusError as e:
+            # Handle rate limiting (403 or 429)
+            if e.response.status_code in (403, 429) and retry_count < max_retries:
+                reset_time = e.response.headers.get("X-RateLimit-Reset")
+                if reset_time:
+                    # Wait until reset time (but cap at 60 seconds)
+                    import time
+
+                    wait_time = min(int(reset_time) - int(time.time()), 60)
+                    wait_time = max(wait_time, 1)  # At least 1 second
+                else:
+                    # Exponential backoff: 2^retry_count seconds
+                    wait_time = 2**retry_count
+
+                logger.warning(
+                    f"Rate limit hit on GraphQL API (attempt {retry_count + 1}/{max_retries}). "
+                    f"Waiting {wait_time} seconds before retry..."
+                )
+                await asyncio.sleep(wait_time)
+                return await self.execute_graphql(query, variables, retry_count + 1, max_retries)
+            # Re-raise if not rate limit or max retries exceeded
+            raise

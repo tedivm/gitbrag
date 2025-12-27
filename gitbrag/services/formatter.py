@@ -22,7 +22,7 @@ def format_pr_list(
         show_urls: Whether to display PR URLs (default: False)
         sort_fields: List of (field, direction) tuples for sorting (default: [("created_at", "desc")])
 
-    Valid sort fields: repository, state, created_at, merged_at, title
+    Valid sort fields: repository, state, created_at, merged_at, title, stars
     Valid sort directions: asc, desc
     """
     console = Console()
@@ -47,6 +47,12 @@ def format_pr_list(
     table = Table(title="Pull Requests", show_header=True, header_style="bold magenta")
 
     table.add_column("Repository", style="white")
+
+    # Add star increase column if any PR has star_increase data
+    has_star_data = any(pr.star_increase is not None for pr in sorted_prs)
+    if has_star_data:
+        table.add_column("Stars", style="green", no_wrap=True)
+
     table.add_column("PR #", style="cyan", no_wrap=True)
     table.add_column("Title", style="white")
     table.add_column("State", style="white", no_wrap=True)
@@ -70,14 +76,27 @@ def format_pr_list(
         created_str = pr.created_at.strftime("%Y-%m-%d")
         merged_str = pr.merged_at.strftime("%Y-%m-%d") if pr.merged_at else "-"
 
-        row = [
-            pr.repository,
-            str(pr.number),
-            pr.title,
-            state_display,
-            created_str,
-            merged_str,
-        ]
+        row = [pr.repository]
+
+        # Add star increase if data is available
+        if has_star_data:
+            if pr.star_increase is None:
+                star_display = "-"
+            elif pr.star_increase == 0:
+                star_display = "0"
+            else:
+                star_display = f"+{pr.star_increase}"
+            row.append(star_display)
+
+        row.extend(
+            [
+                str(pr.number),
+                pr.title,
+                state_display,
+                created_str,
+                merged_str,
+            ]
+        )
 
         if show_urls:
             row.append(pr.url)
@@ -132,6 +151,11 @@ def _sort_pull_requests(
                 return pr.merged_at if pr.merged_at else (pr.created_at if reverse else dt.max)
             elif field == "title":
                 return pr.title.lower()
+            elif field == "stars":
+                # Sort by star increase, treating None as -1 (sort to end when descending)
+                if pr.star_increase is None:
+                    return -1 if reverse else 999999
+                return pr.star_increase
             else:
                 logger.warning(f"Unknown sort field: {field}, ignoring")
                 return pr.created_at

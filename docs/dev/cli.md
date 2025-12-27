@@ -20,8 +20,9 @@ gitbrag list <username>
 - `--until DATE` - End date for filtering (ISO format YYYY-MM-DD, default: today)
 - `--include-private` - Include private repositories (requires token with `repo` scope)
 - `--show-urls` - Display PR URLs in the output table
+- `--show-star-increase` - Display repository star increases during the filtered time period
 - `--sort FIELD[:ORDER]` - Sort results by field (can be specified multiple times for multi-level sorting)
-  - Valid fields: `repository`, `state`, `created`, `merged`, `title`
+  - Valid fields: `repository`, `state`, `created`, `merged`, `title`, `stars` (requires `--show-star-increase`)
   - Valid orders: `asc`, `desc` (default varies by field)
 - `--token TOKEN` - Override the GitHub PAT from environment
 
@@ -57,16 +58,39 @@ Show PR URLs:
 gitbrag list tedivm --show-urls
 ```
 
+Show repository star increases during the filtered period:
+
+```bash
+gitbrag list tedivm --since 2024-12-14 --until 2025-12-14 --show-star-increase
+```
+
+Sort by star increase (requires `--show-star-increase`):
+
+```bash
+gitbrag list tedivm --show-star-increase --sort stars:desc
+```
+
 **Output:**
 
 The command displays a formatted table with:
 
 - Repository name (owner/repo)
+- Stars (increase during filtered period, shown with + prefix) - only when `--show-star-increase` is used
 - PR number
 - PR title
 - State (merged, open, or closed)
 - Created date
 - Merged date (or "-" if not merged)
+
+**Star Increase Column:**
+
+When `--show-star-increase` is enabled, an additional column shows the number of new stargazers gained by each repository during the filtered time period:
+
+- `+N` - Repository gained N stars
+- `0` - No star increase
+- `-` - Star data unavailable
+
+Star increase data is cached for 24 hours to reduce API requests.
 
 **Notes:**
 

@@ -42,8 +42,9 @@ gitbrag list <username> [OPTIONS]
 - `--until DATE` - End date (ISO format, default: today)
 - `--include-private` - Include private repositories
 - `--show-urls` - Display PR URLs in output
+- `--show-star-increase` - Display repository star increases during the filtered period
 - `--sort FIELD[:ORDER]` - Sort by field (can be used multiple times)
-  - Valid fields: `repository`, `state`, `created`, `merged`, `title`
+  - Valid fields: `repository`, `state`, `created`, `merged`, `title`, `stars` (requires `--show-star-increase`)
   - Valid orders: `asc`, `desc` (default: `desc`)
 
 ### Examples
@@ -64,6 +65,12 @@ Sort by repository, then by merge date:
 
 ```bash
 gitbrag list tedivm --since 2024-12-14 --until 2025-12-14 --sort repository --sort merged:desc
+```
+
+Show repository star increases during the filtered period:
+
+```bash
+gitbrag list tedivm --since 2024-12-14 --until 2025-12-14 --show-star-increase
 ```
 
 Example output:

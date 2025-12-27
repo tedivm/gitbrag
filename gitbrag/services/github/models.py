@@ -16,3 +16,4 @@ class PullRequestInfo:
     closed_at: datetime | None
     author: str
     organization: str
+    star_increase: int | None = None  # Number of stars gained during filtered period

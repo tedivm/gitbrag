@@ -7,6 +7,7 @@ import httpx
 
 from .client import GitHubAPIClient
 from .models import PullRequestInfo
+from .stargazers import collect_repository_star_increases
 
 logger = getLogger(__name__)
 
@@ -28,6 +29,8 @@ class PullRequestCollector:
         since: datetime | None = None,
         until: datetime | None = None,
         include_private: bool = False,
+        include_star_increase: bool = False,
+        wait_for_rate_limit: bool = True,
     ) -> list[PullRequestInfo]:
         """Collect pull requests for a given user.
 
@@ -36,9 +39,12 @@ class PullRequestCollector:
             since: Only include PRs created on or after this date
             until: Only include PRs created on or before this date
             include_private: Whether to include private repository PRs (default: False)
+            include_star_increase: Whether to fetch star increase data for repositories (default: False)
+            wait_for_rate_limit: If True, wait when rate limited; if False, raise exception (default: True)
 
         Returns:
-            List of PullRequestInfo objects
+            List of PullRequestInfo objects with optional star_increase field populated
+            if include_star_increase is True
 
         Raises:
             httpx.HTTPStatusError: If GitHub API request fails
@@ -135,6 +141,24 @@ class PullRequestCollector:
                     continue
 
             logger.info(f"Collected {len(pull_requests)} pull requests for user {username}")
+
+            # Optionally collect star increases for repositories
+            if include_star_increase and since and until:
+                # Extract unique repository names from PRs
+                repositories = list({pr.repository for pr in pull_requests})
+                if repositories:
+                    logger.debug(f"Collecting star increases for {len(repositories)} repositories")
+                    star_increases = await collect_repository_star_increases(
+                        client=self.github_client,
+                        repositories=repositories,
+                        since=since,
+                        until=until,
+                        wait_for_rate_limit=wait_for_rate_limit,
+                    )
+                    # Populate star_increase field in each PR
+                    for pr in pull_requests:
+                        pr.star_increase = star_increases.get(pr.repository)
+
             return pull_requests
 
         except httpx.HTTPStatusError as e:

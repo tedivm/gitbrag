@@ -270,7 +270,7 @@ async def login(request: Request, return_to: str = Query(default="/")) -> Redire
     scopes = settings.oauth_scopes.split()
     auth_url = oauth.get_authorization_url(state=state, scopes=scopes)
 
-    logger.info(f"Redirecting to GitHub OAuth: {auth_url}")
+    logger.info(f"Redirecting to GitHub OAuth with scopes: {', '.join(scopes)}")
     return RedirectResponse(auth_url, status_code=status.HTTP_302_FOUND)
 
 

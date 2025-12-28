@@ -36,7 +36,8 @@ def test_login_route_exists(fastapi_client):
     response = fastapi_client.get("/auth/login", follow_redirects=False)
     # Should redirect to GitHub OAuth
     assert response.status_code in (302, 307)
-    assert "github.com" in response.headers.get("location", "")
+    location = response.headers.get("location", "")
+    assert location.startswith("https://github.com/") or location.startswith("http://github.com/")
 
 
 def test_logout_route(fastapi_client):

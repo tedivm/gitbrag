@@ -52,7 +52,8 @@
     function navigateToUser() {
       const username = document.getElementById('username-input').value.trim();
       if (username) {
-        window.location.href = `/user/github/${username}`;
+        // Properly encode username to prevent XSS
+        window.location.href = `/user/github/${encodeURIComponent(username)}`;
       }
     }
   </script>

@@ -99,15 +99,15 @@ This enrichment makes reports more compelling for performance reviews, portfolio
 
 ## Success Criteria
 
-- [ ] Web reports display PR size categories ("One Liner", "Small", "Medium", "Large", "Huge", "Massive") for each PR
-- [ ] CLI output displays PR size categories in PR table
-- [ ] Web summary card shows total lines added, deleted, and changed files count
-- [ ] CLI summary shows aggregate code statistics
-- [ ] Web reports show contributor role at repository level (OWNER, MEMBER, CONTRIBUTOR)
-- [ ] CLI output shows contributor role badges in repository sections
-- [ ] Web summary card displays language breakdown with percentages (top 3-5 languages)
-- [ ] CLI summary displays language breakdown with percentages
-- [ ] Language detection works for common file extensions (.py, .js, .go, .java, .rb, etc.)
-- [ ] File lists are fetched efficiently with caching to minimize rate limit impact
-- [ ] Visual presentation is clean and professional in both web and CLI (not cluttered)
-- [ ] Existing reports continue to work with new optional fields in both interfaces
+- [x] Web reports display PR size categories ("One Liner", "Small", "Medium", "Large", "Huge", "Massive") for each PR
+- [x] CLI output displays PR size categories in PR table
+- [x] Web summary card shows total lines added, deleted, and changed files count
+- [x] CLI summary shows aggregate code statistics
+- [x] Web reports show contributor role at repository level (OWNER, MEMBER, CONTRIBUTOR)
+- [x] CLI output shows contributor role badges in repository sections
+- [x] Web summary card displays language breakdown with percentages (top 10 languages with bar graphs)
+- [x] CLI summary displays language breakdown with percentages (top 5 languages)
+- [x] Language detection works for common file extensions (.py, .js, .go, .java, .rb, etc.)
+- [x] File lists are fetched efficiently with caching to minimize rate limit impact
+- [x] Visual presentation is clean and professional in both web and CLI (not cluttered)
+- [x] Existing reports continue to work with new optional fields in both interfaces

@@ -32,6 +32,54 @@ gitbrag/services/github/
 4. **Rate Limiting**: Exponential backoff on rate limit hits with header monitoring
 5. **Transformation**: Raw API responses converted to `PullRequestInfo` models
 
+### Code Enrichment
+
+GitBrag enriches basic PR data with additional code metrics and analysis:
+
+#### PR File Lists and Code Metrics
+
+- **File Fetching**: After collecting PRs, fetches detailed file lists via `/repos/{owner}/{repo}/pulls/{number}/files` API
+- **Code Statistics**: Extracts additions, deletions, and changed_files counts from file data
+- **Caching Strategy**: File lists cached with 6-hour TTL to enable efficient regeneration of overlapping time periods
+- **Concurrent Fetching**: Uses semaphore-limited async fetching (max 10 parallel) for performance
+
+#### Language Detection
+
+- **Extension Mapping**: 50+ file extension to language mappings (.py → Python, .js → JavaScript, etc.)
+- **Analysis Service**: `language_analyzer.py` calculates language percentages across all PRs
+- **Top Languages**: Reports show top 10 (web) or top 5 (CLI) languages with percentages
+- **No External Dependencies**: Simple extension-based detection, no Linguist required
+
+#### PR Size Categorization
+
+- **Six Categories**: One Liner (1), Small (2-100), Medium (101-500), Large (501-1500), Huge (1501-5000), Massive (5000+)
+- **Based on Total Lines**: Additions + deletions = total lines changed
+- **Visual Display**: Color-coded badges in both web and CLI interfaces
+- **Service**: `pr_size.py` provides categorization function
+
+#### Repository Roles
+
+- **Author Association**: Tracks contributor relationship (OWNER, MEMBER, CONTRIBUTOR, COLLABORATOR, etc.)
+- **Repository Level**: Uses most recent PR's author_association for each repository
+- **Visual Display**: Color-coded badges in repository headers and summary statistics
+
+#### Data Model Extensions
+
+The `PullRequestInfo` model includes these optional enrichment fields:
+
+```python
+@dataclass
+class PullRequestInfo:
+    # ... base fields ...
+
+    # Code enrichment fields (optional)
+    additions: int | None = None          # Lines added
+    deletions: int | None = None          # Lines deleted
+    changed_files: int | None = None      # Number of files changed
+    author_association: str | None = None # Contributor role
+    file_list: list[str] | None = None   # List of file paths (for language detection)
+```
+
 ## Authentication Setup
 
 ### Personal Access Token (PAT)

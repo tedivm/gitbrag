@@ -36,6 +36,69 @@
     {% endif %}
   </div>
 
+  {% if total_additions is defined and total_additions is not none %}
+  <div class="summary-stats code-metrics">
+    <div class="stat-item stat-additions">
+      <div class="stat-value">+{{ "{:,}".format(total_additions) }}</div>
+      <div class="stat-label">Lines Added</div>
+    </div>
+
+    {% if total_deletions is defined and total_deletions is not none %}
+    <div class="stat-item stat-deletions">
+      <div class="stat-value">-{{ "{:,}".format(total_deletions) }}</div>
+      <div class="stat-label">Lines Deleted</div>
+    </div>
+    {% endif %}
+
+    {% if total_changed_files is defined and total_changed_files is not none %}
+    <div class="stat-item">
+      <div class="stat-value">{{ "{:,}".format(total_changed_files) }}</div>
+      <div class="stat-label">Files Changed</div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if language_breakdown is defined and language_breakdown %}
+  <div class="language-breakdown">
+    <h3>Top Languages</h3>
+    <div class="language-bars">
+      {% set max_percentage = language_breakdown[0][1] if language_breakdown else 100 %}
+      {% for language, percentage in language_breakdown %}
+      <div class="language-bar-item">
+        <div class="language-label">
+          <span class="language-name">{{ language }}</span>
+          <span class="language-percentage">{{ "%.1f"|format(percentage) }}%</span>
+        </div>
+        <div class="language-bar-container">
+          <div class="language-bar-fill" style="width: {{ (percentage / max_percentage * 100) }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if size_distribution is defined and size_distribution %}
+  <div class="size-distribution">
+    <h3>PR Size Distribution</h3>
+    <div class="size-chart">
+      {% set max_count = size_distribution.values()|list|max %}
+      {% for size_category, count in size_distribution.items() %}
+      <div class="size-chart-item">
+        <div class="size-chart-bar-container">
+          <div class="size-chart-bar size-{{ size_category|replace(' ', '-')|lower }}"
+            style="height: {{ (count / max_count * 100) }}%" title="{{ count }} PR{{ 's' if count != 1 else '' }}">
+            <span class="size-chart-count">{{ count }}</span>
+          </div>
+        </div>
+        <div class="size-chart-label">{{ size_category }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {% if cache_age %}
   <p class="text-secondary" style="margin-top: 1.5rem; text-align: center;">
     Last updated: {{ cache_age }}

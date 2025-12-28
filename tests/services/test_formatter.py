@@ -551,3 +551,153 @@ def test_format_pr_list_sort_by_merged_at_asc_with_none() -> None:
 
     # Order should be: Merged early, Not merged (None goes to end when asc)
     assert result.index("Merged early") < result.index("Not merged")
+
+
+def test_format_pr_list_with_size_column() -> None:
+    """Test PR list formatting includes Size column."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="Small change",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            additions=5,
+            deletions=3,
+        ),
+        PullRequestInfo(
+            number=2,
+            title="Large change",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/2",
+            state="open",
+            created_at=datetime(2024, 1, 2),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            additions=800,
+            deletions=200,
+        ),
+    ]
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        format_pr_list(prs)
+
+    result = output.getvalue()
+
+    # Check Size column header
+    assert "Size" in result
+    # Size categories should be displayed
+    assert "Small" in result
+    assert "Large" in result
+
+
+def test_format_pr_list_with_summary_statistics() -> None:
+    """Test PR list formatting includes summary statistics."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="Add feature",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            additions=100,
+            deletions=50,
+            changed_files=5,
+        ),
+        PullRequestInfo(
+            number=2,
+            title="Fix bug",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/2",
+            state="merged",
+            created_at=datetime(2024, 1, 2),
+            merged_at=datetime(2024, 1, 3),
+            closed_at=datetime(2024, 1, 3),
+            author="testuser",
+            organization="owner",
+            additions=20,
+            deletions=10,
+            changed_files=2,
+        ),
+    ]
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        format_pr_list(prs)
+
+    result = output.getvalue()
+
+    # Check summary panel
+    assert "Summary" in result
+    assert "Code Statistics" in result
+    # Check aggregate calculations (100+20=120, 50+10=60, 5+2=7)
+    assert "120" in result  # total additions
+    assert "60" in result  # total deletions
+    assert "7" in result  # total files
+
+
+def test_format_pr_list_with_repo_roles() -> None:
+    """Test PR list formatting displays repository roles."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="Add feature",
+            repository="owner/repo1",
+            url="https://github.com/owner/repo1/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            author_association="OWNER",
+        ),
+        PullRequestInfo(
+            number=2,
+            title="Fix bug",
+            repository="owner/repo2",
+            url="https://github.com/owner/repo2/pull/2",
+            state="merged",
+            created_at=datetime(2024, 1, 2),
+            merged_at=datetime(2024, 1, 3),
+            closed_at=datetime(2024, 1, 3),
+            author="testuser",
+            organization="owner",
+            author_association="CONTRIBUTOR",
+        ),
+    ]
+
+    repo_roles = {
+        "owner/repo1": "OWNER",
+        "owner/repo2": "CONTRIBUTOR",
+    }
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        format_pr_list(prs, repo_roles=repo_roles)
+
+    result = output.getvalue()
+
+    # Check repository roles section in summary
+    assert "Repository Roles" in result
+    assert "OWNER" in result
+    assert "CONTRIBUTOR" in result

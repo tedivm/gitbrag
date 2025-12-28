@@ -558,3 +558,108 @@ def test_list_command_dates_are_timezone_aware(
     assert since_date.tzinfo == timezone.utc
     assert until_date.tzinfo is not None
     assert until_date.tzinfo == timezone.utc
+
+
+def test_calculate_repo_roles_basic():
+    """Test calculating repository roles from PRs."""
+    from gitbrag.cli import _calculate_repo_roles
+
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="PR 1",
+            repository="owner/repo1",
+            url="https://github.com/owner/repo1/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            author_association="OWNER",
+        ),
+        PullRequestInfo(
+            number=2,
+            title="PR 2",
+            repository="owner/repo2",
+            url="https://github.com/owner/repo2/pull/2",
+            state="merged",
+            created_at=datetime(2024, 1, 2),
+            merged_at=datetime(2024, 1, 3),
+            closed_at=datetime(2024, 1, 3),
+            author="testuser",
+            organization="owner",
+            author_association="CONTRIBUTOR",
+        ),
+    ]
+
+    repo_roles = _calculate_repo_roles(prs)
+
+    assert repo_roles == {
+        "owner/repo1": "OWNER",
+        "owner/repo2": "CONTRIBUTOR",
+    }
+
+
+def test_calculate_repo_roles_uses_most_recent():
+    """Test that _calculate_repo_roles uses the most recent PR for each repo."""
+    from gitbrag.cli import _calculate_repo_roles
+
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="Older PR",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/1",
+            state="merged",
+            created_at=datetime(2024, 1, 1),
+            merged_at=datetime(2024, 1, 2),
+            closed_at=datetime(2024, 1, 2),
+            author="testuser",
+            organization="owner",
+            author_association="CONTRIBUTOR",
+        ),
+        PullRequestInfo(
+            number=2,
+            title="Newer PR",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/2",
+            state="open",
+            created_at=datetime(2024, 6, 1),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            author_association="MEMBER",
+        ),
+    ]
+
+    repo_roles = _calculate_repo_roles(prs)
+
+    # Should use MEMBER from the newer PR
+    assert repo_roles == {"owner/repo": "MEMBER"}
+
+
+def test_calculate_repo_roles_handles_none():
+    """Test that _calculate_repo_roles handles None author_association."""
+    from gitbrag.cli import _calculate_repo_roles
+
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="PR without role",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            author_association=None,
+        ),
+    ]
+
+    repo_roles = _calculate_repo_roles(prs)
+
+    assert repo_roles == {"owner/repo": None}

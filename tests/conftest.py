@@ -5,6 +5,10 @@ import os
 if "SESSION_SECRET_KEY" not in os.environ:
     os.environ["SESSION_SECRET_KEY"] = "test-secret-key-for-testing-purposes-only-min-32-chars"
 
+# Enable caching for tests
+if "CACHE_ENABLED" not in os.environ:
+    os.environ["CACHE_ENABLED"] = "true"
+
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient

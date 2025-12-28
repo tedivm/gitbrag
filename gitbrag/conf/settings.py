@@ -48,6 +48,16 @@ class WebSettings(BaseSettings):
         description="GitHub username to use as an example on the home page",
     )
 
+    # Task tracking settings
+    task_timeout_seconds: int = Field(
+        default=300,
+        description="Timeout in seconds for background tasks (auto-cleanup if task hangs)",
+    )
+    max_reported_user_concurrent_tasks: int = Field(
+        default=1,
+        description="Maximum concurrent report generation tasks per reported GitHub username",
+    )
+
 
 class Settings(CacheSettings, GitHubSettings, WebSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

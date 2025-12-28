@@ -4,6 +4,51 @@
 
 {% block content %}
 <div class="container">
+  <!-- Regeneration / Stale Cache Notices -->
+  {% if generating %}
+  <div class="alert alert-info regenerating-notice">
+    <span class="spinner"></span>
+    <div class="notice-text">
+      <strong>Generating Report</strong>
+      <p>Your report is being generated. This may take 10 seconds to several minutes depending on the number of
+        contributions. This page will auto-refresh in <span id="refresh-countdown">10</span> seconds.</p>
+    </div>
+  </div>
+  {% elif is_regenerating %}
+  <div class="alert alert-info regenerating-notice">
+    <span class="spinner"></span>
+    <div class="notice-text">
+      <strong>Report Updating</strong>
+      <p>This report is being updated with the latest data. The current data is shown below. This page will auto-refresh
+        in <span id="refresh-countdown">10</span> seconds to show the updated report.</p>
+    </div>
+  </div>
+  {% elif is_stale and not authenticated %}
+  <div class="alert alert-warning stale-notice">
+    <div class="notice-text">
+      <strong>Report May Be Outdated</strong>
+      <p>This report was last updated {{ cache_info.age }}. <a
+          href="/auth/login?return_to={{ request.url.path }}?period={{ period }}" class="btn btn-primary btn-sm">Login
+          to Refresh</a></p>
+    </div>
+  </div>
+  {% elif is_stale and authenticated %}
+  <div class="alert alert-warning stale-notice">
+    <div class="notice-text">
+      <strong>Report May Be Outdated</strong>
+      <p>This report was last updated {{ cache_info.age }}. <a href="?period={{ period }}&force=true"
+          class="btn btn-primary btn-sm">Refresh Now</a></p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Exit early if just generating -->
+  {% if generating %}
+  <div class="text-center" style="margin: 4rem 0;">
+    <p>Please wait while we collect the contribution data from GitHub...</p>
+  </div>
+  {% else %}
+
   <!-- Period Description -->
   <div class="period-description">
     <p>
@@ -179,5 +224,13 @@
     {% endif %}
   </div>
   {% endif %}
+
+  {% endif %} {# End if generating #}
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if generating or is_regenerating %}
+<script src="{{ url_for('static', path='/js/report_refresh.js') }}"></script>
+{% endif %}
 {% endblock %}

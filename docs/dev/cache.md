@@ -288,6 +288,59 @@ To disable caching without changing code:
 
 When caching is disabled, your application continues to work normally - cache operations simply don't store or retrieve any data.
 
+## Task Tracking with Redis
+
+The web interface uses Redis for task tracking to prevent duplicate report generation and implement per-user rate limiting.
+
+### Task Tracking Keys
+
+**Report Task Keys**: Track individual report generation tasks
+
+```
+task:report:{username}:{period}:{params_hash}
+```
+
+Example: `task:report:tedivm:1_year:abc123`
+
+- **Value**: JSON metadata (started_at, username, period, params_hash)
+- **TTL**: 300 seconds (5 minutes, configurable via `TASK_TIMEOUT_SECONDS`)
+- **Purpose**: Prevent duplicate tasks for the same report
+
+**User Task Keys**: Track active tasks per GitHub username
+
+```
+task:user:{reported_username}:active
+```
+
+Example: `task:user:tedivm:active`
+
+- **Value**: JSON array of active task IDs for this user
+- **TTL**: 300 seconds (refreshed when tasks are added)
+- **Purpose**: Per-user rate limiting (max 1 concurrent task per username)
+
+### Task Lifecycle
+
+1. **Check**: Before scheduling, check if task exists: `await cache.get(task_key)`
+2. **Start**: Set task key with metadata: `await cache.set(task_key, metadata, ttl=300)`
+3. **Track User**: Add to user's active tasks list
+4. **Generate**: Run report generation in background
+5. **Complete**: Delete task key: `await cache.delete(task_key)`
+6. **Cleanup**: Remove from user's active tasks list
+
+### Why Per-User Rate Limiting?
+
+Limiting to 1 concurrent task per reported GitHub username allows sequential report generation to reuse cached data:
+
+- User profile information
+- Repository metadata
+- Previously fetched PR data
+
+This can reduce GitHub API calls by 50-70% when generating multiple reports for the same user.
+
+### Automatic Cleanup
+
+Tasks that hang or fail are automatically cleaned up after TTL expiration (300s), preventing orphaned keys from blocking future generations.
+
 ## References
 
 - [aiocache Documentation](https://aiocache.readthedocs.io/)

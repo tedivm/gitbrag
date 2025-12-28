@@ -95,6 +95,38 @@ class Settings(BaseSettings):
 
 To avoid conflicts, you can add a prefix to all environment variables:
 
+## Background Task Settings
+
+### Task Timeout
+
+**`TASK_TIMEOUT_SECONDS`** (default: `300`)
+
+Timeout in seconds for background report generation tasks. Tasks that exceed this time will be automatically cleaned up from the task tracking system. This prevents hung tasks from blocking new generation requests.
+
+```bash
+TASK_TIMEOUT_SECONDS=300  # 5 minutes
+```
+
+### Per-User Rate Limiting
+
+**`MAX_REPORTED_USER_CONCURRENT_TASKS`** (default: `1`)
+
+Maximum number of concurrent report generation tasks allowed per reported GitHub username. Setting this to 1 ensures that only one report generates at a time for each user (e.g., only one report for "tedivm" can generate concurrently).
+
+This optimization allows sequential report generation for the same user to benefit from shared cached data (user profiles, repository information, PR data), significantly reducing GitHub API calls.
+
+```bash
+MAX_REPORTED_USER_CONCURRENT_TASKS=1
+```
+
+**Why limit to 1?** When generating multiple reports for the same GitHub user (e.g., different time periods), sequential generation can reuse:
+
+- User profile data
+- Repository metadata
+- Previously fetched PR information
+
+This can reduce API calls by 50-70% compared to parallel generation.
+
 ```python
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(

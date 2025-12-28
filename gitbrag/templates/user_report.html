@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{{ username }}'s Contributions{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Period Description -->
+  <div class="period-description">
+    <p>
+      {% if period == "1_year" %}
+      Past year
+      {% elif period == "2_years" %}
+      Past 2 years
+      {% elif period == "5_years" %}
+      Past 5 years
+      {% elif period == "all_time" %}
+      All time
+      {% endif %}
+      ({{ since_date }} to {{ until_date }})
+    </p>
+  </div>
+
+  <!-- Period Selector -->
+  <div class="period-selector">
+    <a href="/user/github/{{ username }}?period=1_year"
+      class="period-link {% if period == '1_year' %}active{% endif %}">1 Year</a>
+    <a href="/user/github/{{ username }}?period=2_years"
+      class="period-link {% if period == '2_years' %}active{% endif %}">2 Years</a>
+    <a href="/user/github/{{ username }}?period=5_years"
+      class="period-link {% if period == '5_years' %}active{% endif %}">5 Years</a>
+    <a href="/user/github/{{ username }}?period=all_time"
+      class="period-link {% if period == 'all_time' %}active{% endif %}">All Time</a>
+  </div>
+
+  <!-- User Profile Section -->
+  {% if user_profile %}
+  <div class="user-profile">
+    <img src="{{ user_profile.avatar_url }}" alt="{{ username }}'s avatar" class="user-avatar">
+    <div class="user-info">
+      <h1>
+        <a href="{{ user_profile.html_url }}" target="_blank" class="user-name-link">
+          {{ user_profile.name or username }}
+        </a>
+      </h1>
+      <p class="user-username">@{{ username }}</p>
+      {% if user_profile.bio %}
+      <p class="user-bio">{{ user_profile.bio }}</p>
+      {% endif %}
+      <div class="user-metadata">
+        {% if user_profile.company %}
+        <span class="user-meta-item">🏢 {{ user_profile.company }}</span>
+        {% endif %}
+        {% if user_profile.location %}
+        <span class="user-meta-item">📍 {{ user_profile.location }}</span>
+        {% endif %}
+        {% if user_profile.blog %}
+        <span class="user-meta-item">🔗 <a
+            href="{{ user_profile.blog if user_profile.blog.startswith('http') else 'https://' + user_profile.blog }}"
+            target="_blank">{{ user_profile.blog }}</a></span>
+        {% endif %}
+        {% if user_profile.twitter_username %}
+        <span class="user-meta-item">🐦 <a href="https://twitter.com/{{ user_profile.twitter_username }}"
+            target="_blank">@{{ user_profile.twitter_username }}</a></span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <!-- Report Header (fallback when no profile data) -->
+  <div class="report-header">
+    <h1>{{ username }}'s GitHub Contributions</h1>
+  </div>
+  {% endif %}
+
+  <!-- Summary Card -->
+  {% include "components/summary_card.html" %}
+
+  <!-- Repositories Section -->
+  {% if repositories %}
+  <div class="repositories-section">
+    <h2>Contributions by Repository</h2>
+    {% for repo_full_name, repo_prs in repositories.items() %}
+    <div class="repo-section">
+      <div class="repo-header">
+        <h3 class="repo-name">
+          <a href="https://github.com/{{ repo_full_name }}" target="_blank">
+            {{ repo_full_name }}
+          </a>
+        </h3>
+        <div class="repo-stats">
+          {{ repo_prs | length }} PR{{ "s" if (repo_prs | length) != 1 else "" }}
+          {% if total_star_increase and repo_prs[0].star_increase and repo_prs[0].star_increase != 0 %}
+          | {% if repo_prs[0].star_increase == -1 %}>1000{% else %}+{{ repo_prs[0].star_increase }}{% endif %} ⭐
+          {% endif %}
+        </div>
+      </div>
+      {% if repo_descriptions and repo_descriptions.get(repo_full_name) %}
+      <p class="repo-description">{{ repo_descriptions[repo_full_name] }}</p>
+      {% endif %}
+
+      <!-- PR Table for this repo -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>PR</th>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pr in repo_prs %}
+            <tr>
+              <td>
+                <a href="{{ pr.url }}" target="_blank">#{{ pr.number }}</a>
+              </td>
+              <td>{{ pr.title }}</td>
+              <td>
+                {% set display_state = pr.get_display_state() %}
+                {% if display_state == "merged" %}
+                <span class="status-badge status-merged">Merged</span>
+                {% elif display_state == "open" %}
+                <span class="status-badge status-open">Open</span>
+                {% else %}
+                <span class="status-badge status-closed">Closed</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if pr.created_at %}
+                {{ pr.created_at.strftime("%Y-%m-%d") }}
+                {% else %}
+                N/A
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-data">
+    <p>No pull requests found for this period.</p>
+  </div>
+  {% endif %}
+
+  <!-- Cache Status -->
+  {% if cache_info %}
+  <div class="cache-status">
+    <p>
+      Report generated {{ cache_info.age }}
+      {% if cache_info.is_stale %}
+      <span class="stale-badge">⚠️ Stale</span>
+      {% endif %}
+    </p>
+    {% if authenticated %}
+    <p class="auth-prompt">
+      <a href="/user/github/{{ username }}?period={{ period }}&force=true">Refresh this report</a>
+    </p>
+    {% else %}
+    <p class="auth-prompt">
+      <a href="/auth/login?redirect=/user/github/{{ username }}?period={{ period }}">Login</a> to refresh this report
+    </p>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

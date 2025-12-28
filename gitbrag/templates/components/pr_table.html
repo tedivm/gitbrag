@@ -1,0 +1,39 @@
+{# PR table component - displays list of pull requests #}
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>PR</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Created</th>
+        {% if show_merged_date %}
+        <th>Merged</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for pr in prs %}
+      <tr>
+        <td>
+          <a href="{{ pr.url }}" target="_blank">#{{ pr.number }}</a>
+        </td>
+        <td>{{ pr.title }}</td>
+        <td>
+          {% if pr.state == "merged" %}
+          <span class="status-badge status-merged">Merged</span>
+          {% elif pr.state == "open" %}
+          <span class="status-badge status-open">Open</span>
+          {% else %}
+          <span class="status-badge status-closed">Closed</span>
+          {% endif %}
+        </td>
+        <td>{{ pr.created_at.strftime("%Y-%m-%d") if pr.created_at else "N/A" }}</td>
+        {% if show_merged_date %}
+        <td>{{ pr.merged_at.strftime("%Y-%m-%d") if pr.merged_at else "-" }}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

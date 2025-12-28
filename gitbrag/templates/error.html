@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}{{ error_title }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 2rem auto; text-align: center;">
+  <h1>{{ error_title }}</h1>
+  <p style="color: var(--text-secondary); margin: 1.5rem 0;">
+    {{ error_message }}
+  </p>
+  <div style="margin-top: 2rem;">
+    <a href="/" class="btn btn-primary">Go Home</a>
+    {% if show_login %}
+    <a href="/auth/login" class="btn btn-secondary">Login</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

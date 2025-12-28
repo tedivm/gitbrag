@@ -2,6 +2,15 @@
 
 Create a brag list of open source contributions
 
+## Features
+
+- **CLI**: Command-line interface for generating reports
+- **Web Interface**: Browser-based interface with GitHub OAuth authentication
+- **Public Data**: Only accesses publicly available GitHub data
+- **Caching**: Redis-backed caching for performance
+- **Flexible Filtering**: Filter by date range and repository
+- **Multiple Formats**: Rich terminal output and web views
+
 ## Installation
 
 ```bash
@@ -13,6 +22,30 @@ Or run directly with `uvx` without installing:
 ```bash
 uvx gitbrag list <username>
 ```
+
+## Quick Start
+
+### CLI
+
+```bash
+# List your contributions from the past year
+gitbrag list your-username
+
+# Or with date range
+gitbrag list your-username --since 2024-12-14 --until 2025-12-14
+```
+
+### Web Interface
+
+Start the web interface with Docker Compose:
+
+```bash
+docker compose up
+```
+
+Then visit `http://localhost` and login with GitHub to generate your report.
+
+See [Web Interface Documentation](docs/dev/web.md) for detailed setup instructions.
 
 ## Configuration
 

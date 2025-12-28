@@ -52,6 +52,23 @@ async def fetch_repository_star_increase(
         assert isinstance(cached_result, int)
         return cached_result
 
+    # Optimization: For all-time queries (since before GitHub's launch in 2008),
+    # just use the total stargazer count instead of paginating through all stars
+    github_launch = datetime(2008, 1, 1, tzinfo=since.tzinfo)
+    if since <= github_launch:
+        logger.debug(f"All-time query for {owner}/{repo}, using total stargazer count")
+        try:
+            repo_info = await client.get_repository(owner, repo)
+            total_stars: int | None = repo_info.get("stargazers_count", 0)
+            logger.debug(f"Repository {owner}/{repo} has {total_stars} total stars")
+
+            # Cache the result
+            await set_cached(cache_key, total_stars, ttl=settings.cache_star_increase_ttl, alias="persistent")
+            return total_stars
+        except Exception as e:
+            logger.error(f"Failed to fetch total star count for {owner}/{repo}: {e}")
+            return None
+
     query = """
     query($owner: String!, $name: String!, $cursor: String) {
       repository(owner: $owner, name: $name) {
@@ -78,8 +95,7 @@ async def fetch_repository_star_increase(
             if cursor:
                 variables["cursor"] = cursor
 
-            max_retries = 3 if wait_for_rate_limit else 0
-            result = await client.execute_graphql(query=query, variables=variables, max_retries=max_retries)
+            result = await client.execute_graphql(query=query, variables=variables)
 
             # Extract repository data
             repo_data = result.get("data", {}).get("repository")
@@ -108,6 +124,12 @@ async def fetch_repository_star_increase(
                 # Count stars within the date range
                 if since <= starred_at <= until:
                     star_count += 1
+                    # Early termination at 1000 stars for performance
+                    if star_count >= 1000:
+                        logger.debug(f"Star count limit reached for {owner}/{repo} (>1000 stars)")
+                        # Return -1 to indicate >1000 stars
+                        await set_cached(cache_key, -1, ttl=settings.cache_star_increase_ttl, alias="persistent")
+                        return -1
 
             # Check if there's another page (unless early termination triggered)
             if has_next_page:
@@ -121,17 +143,20 @@ async def fetch_repository_star_increase(
 
         return star_count
 
+    except httpx.TimeoutException:
+        logger.error(f"Timeout fetching stars for {owner}/{repo} after retries")
+        return None
     except httpx.HTTPStatusError as e:
         if e.response.status_code in (403, 429):
-            logger.warning(f"Rate limit hit for {owner}/{repo}: {e}")
+            logger.warning(f"Rate limit hit for {owner}/{repo}: {e.response.status_code}")
         else:
-            logger.warning(f"HTTP error fetching stars for {owner}/{repo}: {e}")
+            logger.warning(f"HTTP error fetching stars for {owner}/{repo}: {e.response.status_code}")
         return None
     except ValueError as e:
         logger.warning(f"GraphQL error fetching stars for {owner}/{repo}: {e}")
         return None
-    except Exception as e:
-        logger.error(f"Unexpected error fetching stars for {owner}/{repo}: {e}")
+    except Exception:
+        logger.exception(f"Unexpected error fetching stars for {owner}/{repo}")
         return None
 
 
@@ -141,6 +166,7 @@ async def collect_repository_star_increases(
     since: datetime,
     until: datetime,
     wait_for_rate_limit: bool = True,
+    max_concurrent: int = 10,
 ) -> dict[str, int | None]:
     """Collect star increases for multiple repositories concurrently.
 
@@ -150,6 +176,7 @@ async def collect_repository_star_increases(
         since: Start of time period
         until: End of time period
         wait_for_rate_limit: If True, wait when rate limited; if False, raise exception
+        max_concurrent: Maximum number of concurrent repository fetches (default: 10)
 
     Returns:
         Dictionary mapping repository name to star increase (or None if unavailable)
@@ -162,41 +189,49 @@ async def collect_repository_star_increases(
             seen.add(repo)
             unique_repos.append(repo)
 
-    logger.debug(f"Collecting star increases for {len(unique_repos)} unique repositories")
+    logger.debug(
+        f"Collecting star increases for {len(unique_repos)} unique repositories (max {max_concurrent} concurrent)"
+    )
 
-    # Create tasks for concurrent fetching with repository names
-    repo_tasks: list[tuple[str, Any]] = []
-    for repo_full_name in unique_repos:
+    # Create semaphore to limit concurrent requests
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def fetch_with_semaphore(repo_full_name: str) -> tuple[str, int | None]:
+        """Fetch star increase with semaphore limiting concurrency."""
         parts = repo_full_name.split("/", 1)
         if len(parts) != 2:
             logger.warning(f"Invalid repository name format: {repo_full_name}")
-            continue
-        owner, repo = parts
-        task = fetch_repository_star_increase(
-            client=client,
-            owner=owner,
-            repo=repo,
-            since=since,
-            until=until,
-            wait_for_rate_limit=wait_for_rate_limit,
-        )
-        repo_tasks.append((repo_full_name, task))
+            return repo_full_name, None
 
-    # Execute all tasks concurrently
-    tasks = [task for _, task in repo_tasks]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+        owner, repo = parts
+        async with semaphore:
+            try:
+                result = await fetch_repository_star_increase(
+                    client=client,
+                    owner=owner,
+                    repo=repo,
+                    since=since,
+                    until=until,
+                    wait_for_rate_limit=wait_for_rate_limit,
+                )
+                return repo_full_name, result
+            except Exception as e:
+                logger.exception(f"Error collecting star increase for {repo_full_name}", exc_info=e)
+                return repo_full_name, None
+
+    # Create tasks for all repositories
+    tasks = [fetch_with_semaphore(repo_full_name) for repo_full_name in unique_repos]
+
+    # Execute with limited concurrency
+    results = await asyncio.gather(*tasks)
 
     # Build result dictionary
     star_increases: dict[str, int | None] = {}
-    for (repo_full_name, _), result in zip(repo_tasks, results):
-        if isinstance(result, Exception):
-            logger.error(f"Error collecting star increase for {repo_full_name}: {result}")
-            star_increases[repo_full_name] = None
-        elif isinstance(result, int):
-            star_increases[repo_full_name] = result
+    for repo_full_name, result in results:
+        star_increases[repo_full_name] = result
+        if result is not None:
             logger.debug(f"Repository {repo_full_name}: +{result} stars")
         else:
-            star_increases[repo_full_name] = None
             logger.debug(f"Star increase unavailable for {repo_full_name}")
 
     return star_increases

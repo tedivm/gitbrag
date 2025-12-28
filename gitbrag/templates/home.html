@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}GitBrag - Showcase Your GitHub Contributions{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto;">
+  <!-- Hero Section -->
+  <div class="card" style="text-align: center; padding: 3rem 2rem; margin-bottom: 2rem;">
+    <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">GitBrag</h1>
+    <p style="font-size: 1.5rem; color: var(--text-secondary); margin-bottom: 2rem;">
+      Showcase Your GitHub Contributions
+    </p>
+    <p style="font-size: 1.125rem; color: var(--text-secondary); max-width: 700px; margin: 0 auto 2rem;">
+      Track and visualize your pull request contributions across all of GitHub: not just your own repositories.
+      Perfect for building your resume, justifying promotions, or simply celebrating your open source impact.
+    </p>
+
+    {% if authenticated and username %}
+    <div style="margin: 2rem 0;">
+      <a href="/user/github/{{ username }}" class="btn btn-primary" style="font-size: 1.25rem; padding: 1rem 2.5rem;">
+        View Your Contribution Report
+      </a>
+    </div>
+    <p style="margin-top: 1rem;">
+      <a href="/auth/logout" class="btn btn-secondary">Logout</a>
+    </p>
+    {% else %}
+    <div style="margin: 2rem 0;">
+      <a href="/auth/login" class="btn btn-primary" style="font-size: 1.25rem; padding: 1rem 2.5rem;">
+        Login with GitHub to Get Started
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- What GitBrag Does -->
+  <div class="card" style="margin-bottom: 2rem;">
+    <h2 style="margin-bottom: 1.5rem; text-align: center;">What GitBrag Does</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+      <div style="text-align: center;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+        <h3 style="margin-bottom: 0.5rem;">Comprehensive Tracking</h3>
+        <p style="color: var(--text-secondary);">
+          Automatically finds all your pull requests across GitHub, including contributions to projects outside your own
+          repositories.
+        </p>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
+        <h3 style="margin-bottom: 0.5rem;">Beautiful Reports</h3>
+        <p style="color: var(--text-secondary);">
+          Generate clean, shareable reports showing your merged, open, and closed PRs with repository breakdowns and
+          statistics.
+        </p>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚀</div>
+        <h3 style="margin-bottom: 0.5rem;">Multiple Use Cases</h3>
+        <p style="color: var(--text-secondary);">
+          Perfect for resumes, performance reviews, promotion justifications, or simply tracking your open source
+          journey.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Features -->
+  <div class="card" style="margin-bottom: 2rem;">
+    <h2 style="margin-bottom: 1.5rem;">Key Features</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+      <div>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Cross-Repository Discovery</h3>
+        <p style="color: var(--text-secondary);">
+          Captures all your contributions, not just those in your own repos
+        </p>
+      </div>
+      <div>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Flexible Date Ranges</h3>
+        <p style="color: var(--text-secondary);">
+          View contributions from 1 year, 2 years, 5 years, or all time
+        </p>
+      </div>
+      <div>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Repository Analytics</h3>
+        <p style="color: var(--text-secondary);">
+          See which repositories you've contributed to most frequently
+        </p>
+      </div>
+      <div>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Star Impact Tracking</h3>
+        <p style="color: var(--text-secondary);">
+          Track the growth of stars in repositories where you've contributed
+        </p>
+      </div>
+      <div>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Easy Sharing</h3>
+        <p style="color: var(--text-secondary);">
+          Share your contributions via simple URLs: once generated, no login required to view
+        </p>
+      </div>
+      <div>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Privacy Focused</h3>
+        <p style="color: var(--text-secondary);">
+          Only public contributions are shown, respecting repository privacy. We only request permission to view public data: no access to private repositories.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Example Report -->
+  <div class="card" style="text-align: center; padding: 2rem;">
+    <h2 style="margin-bottom: 1rem;">See It In Action</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+      Check out an example contribution report to see what GitBrag can do:
+    </p>
+    <a href="/user/github/{{ example_username }}" class="btn btn-secondary"
+      style="font-size: 1.125rem; padding: 0.75rem 2rem;">
+      View Example Report (@{{ example_username }})
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GitBrag - GitHub Contribution Reports{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <script src="/static/js/theme.js"></script>
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="container">
+        <a href="/" class="logo">GitBrag</a>
+        <form class="username-search" onsubmit="event.preventDefault(); navigateToUser();">
+          <input type="text" id="username-input" placeholder="Enter GitHub username..." aria-label="GitHub username" />
+        </form>
+        <ul class="nav-links">
+          <li><a href="/">Home</a></li>
+          {% if authenticated %}
+          <li><a href="/auth/logout">Logout</a></li>
+          {% else %}
+          <li><a href="/auth/login">Login with GitHub</a></li>
+          {% endif %}
+          <li>
+            <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+              🌙
+            </button>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Robert Hafner - Open Source Contribution Reports</p>
+      <p>
+        <a href="https://github.com/tedivm/gitbrag" target="_blank">View on GitHub</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    function navigateToUser() {
+      const username = document.getElementById('username-input').value.trim();
+      if (username) {
+        window.location.href = `/user/github/${username}`;
+      }
+    }
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

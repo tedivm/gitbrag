@@ -1,0 +1,44 @@
+{# Summary card component - displays high-level contribution statistics #}
+<div class="summary-card card">
+  <h2>Contribution Summary ({{ since_date }} to {{ until_date }})</h2>
+
+  <div class="summary-stats">
+    <div class="stat-item">
+      <div class="stat-value">{{ total_prs }}</div>
+      <div class="stat-label">Total PRs</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-value">{{ merged_count }}</div>
+      <div class="stat-label">Merged</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-value">{{ open_count }}</div>
+      <div class="stat-label">Open</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-value">{{ closed_count }}</div>
+      <div class="stat-label">Closed</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-value">{{ repo_count }}</div>
+      <div class="stat-label">Repositories</div>
+    </div>
+
+    {% if star_increase is defined %}
+    <div class="stat-item">
+      <div class="stat-value">{% if star_increase == -1 %}>1000{% else %}+{{ star_increase }}{% endif %}</div>
+      <div class="stat-label">Stars Gained</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if cache_age %}
+  <p class="text-secondary" style="margin-top: 1.5rem; text-align: center;">
+    Last updated: {{ cache_age }}
+  </p>
+  {% endif %}
+</div>

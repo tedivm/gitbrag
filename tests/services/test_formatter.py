@@ -237,3 +237,317 @@ def test_show_progress() -> None:
     # Should have one task
     assert len(progress.tasks) == 1
     assert progress.tasks[0].description == "Testing..."
+
+
+def test_format_pr_list_with_star_increase() -> None:
+    """Test formatting with star increase data."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="Popular PR",
+            repository="owner/repo1",
+            url="https://github.com/owner/repo1/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            star_increase=100,
+        ),
+        PullRequestInfo(
+            number=2,
+            title="No stars",
+            repository="owner/repo2",
+            url="https://github.com/owner/repo2/pull/2",
+            state="open",
+            created_at=datetime(2024, 1, 2, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            star_increase=0,
+        ),
+    ]
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        format_pr_list(prs)
+
+    result = output.getvalue()
+
+    # Check star column is included
+    assert "Stars" in result
+    assert "+100" in result
+    assert "0" in result
+
+
+def test_format_pr_list_sort_by_created_at_desc() -> None:
+    """Test sorting by created_at in descending order."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="Oldest PR",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+        ),
+        PullRequestInfo(
+            number=2,
+            title="Newest PR",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/2",
+            state="open",
+            created_at=datetime(2024, 1, 10, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+        ),
+    ]
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        format_pr_list(prs, sort_fields=[("created_at", "desc")])
+
+    result = output.getvalue()
+
+    # Newest PR should appear before oldest
+    assert result.index("Newest PR") < result.index("Oldest PR")
+
+
+def test_format_pr_list_star_increase_none() -> None:
+    """Test formatting when star_increase is None (data not available)."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="PR without star data",
+            repository="owner/repo1",
+            url="https://github.com/owner/repo1/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            star_increase=None,  # Star data not available
+        ),
+        PullRequestInfo(
+            number=2,
+            title="PR with star data",
+            repository="owner/repo2",
+            url="https://github.com/owner/repo2/pull/2",
+            state="open",
+            created_at=datetime(2024, 1, 2, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            star_increase=50,
+        ),
+    ]
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        format_pr_list(prs)
+
+    result = output.getvalue()
+
+    # Check that "-" is displayed for None star_increase
+    assert "Stars" in result
+    assert "-" in result  # For PR with None
+    assert "+50" in result  # For PR with 50
+
+
+def test_format_pr_list_sort_by_unknown_field() -> None:
+    """Test sorting with unknown field logs warning and uses default."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="PR 1",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+        ),
+    ]
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        with patch("gitbrag.services.formatter.logger") as mock_logger:
+            format_pr_list(prs, sort_fields=[("unknown_field", "asc")])
+
+            # Should log warning about unknown field
+            mock_logger.warning.assert_called_once()
+            assert "Unknown sort field: unknown_field" in str(mock_logger.warning.call_args)
+
+
+def test_format_pr_list_sort_by_merged_at_with_none() -> None:
+    """Test sorting by merged_at when some PRs have None for merged_at."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="Not merged",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+            merged_at=None,  # Not merged
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+        ),
+        PullRequestInfo(
+            number=2,
+            title="Merged early",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/2",
+            state="closed",
+            created_at=datetime(2024, 1, 2, 12, 0, 0),
+            merged_at=datetime(2024, 1, 3, 12, 0, 0),
+            closed_at=datetime(2024, 1, 3, 12, 0, 0),
+            author="testuser",
+            organization="owner",
+        ),
+        PullRequestInfo(
+            number=3,
+            title="Merged late",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/3",
+            state="closed",
+            created_at=datetime(2024, 1, 5, 12, 0, 0),
+            merged_at=datetime(2024, 1, 10, 12, 0, 0),
+            closed_at=datetime(2024, 1, 10, 12, 0, 0),
+            author="testuser",
+            organization="owner",
+        ),
+    ]
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        # Sort descending - None should go to end
+        format_pr_list(prs, sort_fields=[("merged_at", "desc")])
+
+    result = output.getvalue()
+
+    # Order should be: Merged late, Merged early, Not merged
+    assert result.index("Merged late") < result.index("Merged early")
+    assert result.index("Merged early") < result.index("Not merged")
+
+
+def test_format_pr_list_sort_by_stars_desc() -> None:
+    """Test sorting by star increase in descending order."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="Low stars",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            star_increase=5,
+        ),
+        PullRequestInfo(
+            number=2,
+            title="High stars",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/2",
+            state="open",
+            created_at=datetime(2024, 1, 2, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            star_increase=100,
+        ),
+        PullRequestInfo(
+            number=3,
+            title="No star data",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/3",
+            state="open",
+            created_at=datetime(2024, 1, 3, 12, 0, 0),
+            merged_at=None,
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+            star_increase=None,
+        ),
+    ]
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        format_pr_list(prs, sort_fields=[("stars", "desc")])
+
+    result = output.getvalue()
+
+    # Order should be: High stars (100), Low stars (5), No star data (None/-1 when desc)
+    assert result.index("High stars") < result.index("Low stars")
+    assert result.index("Low stars") < result.index("No star data")
+
+
+def test_format_pr_list_sort_by_merged_at_asc_with_none() -> None:
+    """Test sorting by merged_at ascending when some PRs have None for merged_at."""
+    prs = [
+        PullRequestInfo(
+            number=1,
+            title="Not merged",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/1",
+            state="open",
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+            merged_at=None,  # Not merged
+            closed_at=None,
+            author="testuser",
+            organization="owner",
+        ),
+        PullRequestInfo(
+            number=2,
+            title="Merged early",
+            repository="owner/repo",
+            url="https://github.com/owner/repo/pull/2",
+            state="closed",
+            created_at=datetime(2024, 1, 2, 12, 0, 0),
+            merged_at=datetime(2024, 1, 3, 12, 0, 0),
+            closed_at=datetime(2024, 1, 3, 12, 0, 0),
+            author="testuser",
+            organization="owner",
+        ),
+    ]
+
+    output = StringIO()
+    console = Console(file=output, force_terminal=True, width=120)
+
+    with patch("gitbrag.services.formatter.Console", return_value=console):
+        # Sort ascending - None should go to end (dt.max)
+        format_pr_list(prs, sort_fields=[("merged_at", "asc")])
+
+    result = output.getvalue()
+
+    # Order should be: Merged early, Not merged (None goes to end when asc)
+    assert result.index("Merged early") < result.index("Not merged")

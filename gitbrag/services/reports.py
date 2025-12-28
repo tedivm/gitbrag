@@ -155,6 +155,7 @@ async def generate_report_data(
     until: datetime,
     show_star_increase: bool = False,
     period: str | None = None,
+    exclude_closed_unmerged: bool = True,
 ) -> dict[str, Any]:
     """Generate report data for a user.
 
@@ -165,6 +166,7 @@ async def generate_report_data(
         until: End date for PR collection
         show_star_increase: Whether to include star increase data
         period: Optional period name for sorting logic (1_year, 2_years, all_time)
+        exclude_closed_unmerged: Whether to exclude closed-but-not-merged PRs (default True for web)
 
     Returns:
         Dictionary with report data
@@ -183,6 +185,14 @@ async def generate_report_data(
         )
 
         logger.info(f"Collected {len(prs)} PRs for {username}")
+
+        # Filter out closed-but-not-merged PRs if requested
+        if exclude_closed_unmerged:
+            original_count = len(prs)
+            prs = [pr for pr in prs if pr.get_display_state() != "closed"]
+            filtered_count = original_count - len(prs)
+            if filtered_count > 0:
+                logger.info(f"Filtered out {filtered_count} closed-but-not-merged PRs")
 
         # Calculate statistics
         total_prs = len(prs)
@@ -351,6 +361,7 @@ async def get_or_generate_report(
             until=until,
             show_star_increase=show_star_increase,
             period=period,
+            exclude_closed_unmerged=True,  # Filter out closed-but-not-merged PRs for web
         )
 
         # Store in cache

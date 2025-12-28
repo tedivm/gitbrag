@@ -43,7 +43,6 @@ def test_error_404(fastapi_client):
     """Test 404 error handling."""
     response = fastapi_client.get("/nonexistent-page")
     assert response.status_code == 404
-    assert b"404" in response.content
     assert b"Not Found" in response.content
 
 

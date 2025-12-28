@@ -18,12 +18,20 @@ from gitbrag.services.auth import get_optional_github_client
 from gitbrag.services.cache import configure_caches
 from gitbrag.services.github.client import GitHubAPIClient
 from gitbrag.services.github.web_oauth import WebOAuthFlow
-from gitbrag.services.reports import (calculate_date_range,
-                                      get_or_fetch_user_profile,
-                                      get_or_generate_report, normalize_period)
-from gitbrag.services.session import (add_session_middleware, clear_session,
-                                      get_session, is_authenticated,
-                                      set_session_data, store_encrypted_token)
+from gitbrag.services.reports import (
+    calculate_date_range,
+    get_or_fetch_user_profile,
+    get_or_generate_report,
+    normalize_period,
+)
+from gitbrag.services.session import (
+    add_session_middleware,
+    clear_session,
+    get_session,
+    is_authenticated,
+    set_session_data,
+    store_encrypted_token,
+)
 from gitbrag.settings import settings
 
 logger = getLogger(__name__)

@@ -23,7 +23,7 @@ def test_home_page(fastapi_client):
     response = fastapi_client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers.get("content-type", "")
-    assert b"GitBrag" in response.content
+    assert b"git brag" in response.content
     assert b"Login with GitHub" in response.content
 
 

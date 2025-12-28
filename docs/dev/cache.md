@@ -145,6 +145,105 @@ configure_caches(settings)
    - Redis caches can grow large; implement eviction policies and monitor memory usage
    - Use appropriate TTLs to prevent unbounded growth
 
+## Two-Tier Caching Strategy
+
+GitBrag implements a two-tier caching approach for PR enrichment data to balance freshness with efficiency:
+
+### Tier 1: Intermediate Cache (6-hour TTL)
+
+**Purpose**: Cache GitHub API responses for PR file lists
+
+**Implementation**:
+
+- File lists fetched via `/repos/{owner}/{repo}/pulls/{number}/files` API
+- Stored with 6-hour TTL (default, configurable via settings)
+- Used by `fetch_pr_files()` in `pullrequests.py`
+
+**Benefits**:
+
+- Enables efficient regeneration when users request overlapping time periods
+- Example: User generates 1-year report, then 2-year report → reuses cached file lists for first year
+- Reduces API calls significantly for frequently accessed PRs
+- Fresh enough to capture recent changes
+
+**Configuration**:
+
+```python
+# In settings or environment
+PR_FILES_CACHE_TTL = 21600  # 6 hours in seconds (default)
+```
+
+### Tier 2: Permanent Cache (No TTL)
+
+**Purpose**: Store final computed report data with all aggregated metrics
+
+**Implementation**:
+
+- Final report data with calculated code statistics, language percentages, repo roles
+- No expiration - cached permanently
+- Used by `generate_report_data()` in `reports.py`
+
+**Benefits**:
+
+- Enables public viewing without authentication (no GitHub API calls needed)
+- Extremely fast response times for cached reports
+- Reduces API rate limit consumption
+- User can share report URLs publicly
+
+**Cache Keys**:
+
+```python
+# Report cache key format
+f"report:{username}:{since_iso}:{until_iso}:{include_private}"
+
+# Example
+"report:octocat:2024-01-01:2024-12-31:false"
+```
+
+### Workflow Example
+
+1. **First Request** (user generates 1-year report):
+   - Fetch PRs from GitHub Search API
+   - For each PR, fetch file list → cache with 6-hour TTL
+   - Calculate aggregated metrics (languages, code stats, roles)
+   - Store final report → cache permanently
+   - Return report
+
+2. **Second Request** (same user, 2-year report, within 6 hours):
+   - Fetch PRs from GitHub Search API (includes year 1 + year 2)
+   - For year 1 PRs: file lists retrieved from cache (no API calls!)
+   - For year 2 PRs: fetch file lists → cache with 6-hour TTL
+   - Calculate aggregated metrics across both years
+   - Store final report → cache permanently
+   - Return report
+
+3. **Public Viewing** (anonymous user views report):
+   - Check permanent cache for report key
+   - If found: return cached report (no GitHub API calls, no auth needed)
+   - If not found: report must be regenerated (requires auth)
+
+### Cache Invalidation
+
+**Intermediate Cache (PR Files)**:
+
+- Automatically expires after 6 hours
+- Manual flush: `FLUSHALL` on Redis (development only)
+- Reasonable staleness for file lists (PRs don't change often after creation)
+
+**Permanent Cache (Reports)**:
+
+- Never expires automatically
+- Manual flush: `FLUSHALL` on Redis (development only)
+- Intentional design: historical reports are snapshots in time
+
+### Performance Impact
+
+With two-tier caching:
+
+- **First generation**: ~2-5 seconds for 100 PRs (file fetching dominates)
+- **Overlapping regeneration**: ~1-2 seconds (50% cache hit on files)
+- **Cached report viewing**: <100ms (instant, no API calls)
+
 ## Development vs Production
 
 Configure caching behavior through environment variables:

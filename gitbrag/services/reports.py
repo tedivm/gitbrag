@@ -16,6 +16,8 @@ from gitbrag.services.cache import get_cache
 from gitbrag.services.github.client import GitHubAPIClient
 from gitbrag.services.github.models import PullRequestInfo
 from gitbrag.services.github.pullrequests import PullRequestCollector
+from gitbrag.services.language_analyzer import calculate_language_percentages
+from gitbrag.services.pr_size import categorize_pr_size
 
 logger = getLogger(__name__)
 
@@ -200,6 +202,14 @@ async def generate_report_data(
         open_count = sum(1 for pr in prs if pr.get_display_state() == "open")
         closed_count = sum(1 for pr in prs if pr.get_display_state() == "closed")
 
+        # Calculate aggregate code metrics
+        total_additions = sum(pr.additions or 0 for pr in prs)
+        total_deletions = sum(pr.deletions or 0 for pr in prs)
+        total_changed_files = sum(pr.changed_files or 0 for pr in prs)
+
+        # Calculate language breakdown
+        language_breakdown = await calculate_language_percentages(prs, top_n=10)
+
         # Group by repository
         repos: dict[str, list] = {}
         for pr in prs:
@@ -207,6 +217,32 @@ async def generate_report_data(
             if repo_full_name not in repos:
                 repos[repo_full_name] = []
             repos[repo_full_name].append(pr)
+
+        # Calculate repository-level author associations (from most recent PR per repo)
+        repo_roles: dict[str, str | None] = {}
+        for repo_name, repo_prs in repos.items():
+            # Most recent PR based on created_at
+            most_recent = max(repo_prs, key=lambda pr: pr.created_at)
+            repo_roles[repo_name] = most_recent.author_association
+
+        # Calculate PR size categories for each PR
+        for pr in prs:
+            pr.size_category = categorize_pr_size(pr.additions, pr.deletions)  # type: ignore[attr-defined]
+
+        # Calculate PR size distribution
+        from collections import Counter
+
+        size_distribution: dict[str, int] = Counter()
+        for pr in prs:
+            size_cat = getattr(pr, "size_category", None)
+            if size_cat:
+                size_distribution[size_cat] += 1
+
+        # Order by size category (One Liner -> Massive)
+        size_order = ["One Liner", "Small", "Medium", "Large", "Huge", "Massive"]
+        ordered_distribution = {
+            size: size_distribution.get(size, 0) for size in size_order if size in size_distribution
+        }
 
         # Sort repositories by star increase (descending), then by name
         # For all_time period, sort by number of PRs instead
@@ -286,6 +322,12 @@ async def generate_report_data(
         "closed_count": closed_count,
         "repo_count": repo_count,
         "total_star_increase": total_star_increase if show_star_increase else None,
+        "total_additions": total_additions,
+        "total_deletions": total_deletions,
+        "total_changed_files": total_changed_files,
+        "language_breakdown": language_breakdown,
+        "repo_roles": repo_roles,
+        "size_distribution": ordered_distribution,
         "repositories": repos,
         "repo_descriptions": repo_descriptions,
         "prs": prs,

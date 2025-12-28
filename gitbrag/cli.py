@@ -120,11 +120,15 @@ async def list_contributions(
                     include_star_increase=show_star_increase,
                 )
 
+        # Calculate repository-level roles
+        repo_roles = _calculate_repo_roles(pull_requests)
+
         # Format and display results
         format_pr_list(
             pull_requests,
             show_urls=show_urls,
             sort_fields=sort_fields,
+            repo_roles=repo_roles,
         )
 
     except ValueError as e:
@@ -216,6 +220,36 @@ def _parse_sort_fields(sort: list[str] | None, show_star_increase: bool = False)
         parsed_fields.append((field, direction))
 
     return parsed_fields
+
+
+def _calculate_repo_roles(pull_requests: list) -> dict[str, str | None]:
+    """Calculate repository-level roles from pull requests.
+
+    Uses the author_association from the most recent PR for each repository.
+
+    Args:
+        pull_requests: List of PullRequestInfo objects
+
+    Returns:
+        Dictionary mapping repository names to roles
+    """
+    from .services.github.models import PullRequestInfo
+
+    repo_roles: dict[str, str | None] = {}
+
+    # Group PRs by repository and find most recent
+    repo_to_prs: dict[str, list[PullRequestInfo]] = {}
+    for pr in pull_requests:
+        if pr.repository not in repo_to_prs:
+            repo_to_prs[pr.repository] = []
+        repo_to_prs[pr.repository].append(pr)
+
+    # Get role from most recent PR per repository
+    for repo_name, prs in repo_to_prs.items():
+        most_recent = max(prs, key=lambda p: p.created_at)
+        repo_roles[repo_name] = most_recent.author_association
+
+    return repo_roles
 
 
 if __name__ == "__main__":

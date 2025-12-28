@@ -295,6 +295,46 @@ class GitHubAPIClient:
         result: dict[str, Any] = response.json()
         return result
 
+    async def get_pr_files(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+        """Get list of files changed in a pull request.
+
+        Args:
+            owner: Repository owner (user or organization)
+            repo: Repository name
+            number: Pull request number
+
+        Returns:
+            List of file data dictionaries including filename, additions, deletions, changes, etc.
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails
+        """
+        # GitHub API returns paginated results for PR files (max 3000 files)
+        per_page = 100
+        page = 1
+        all_files: list[dict[str, Any]] = []
+
+        while True:
+            response = await self._request_with_retry(
+                "GET",
+                f"{self.base_url}/repos/{owner}/{repo}/pulls/{number}/files",
+                params={"per_page": per_page, "page": page},
+            )
+            files: list[dict[str, Any]] = response.json()
+
+            if not files:
+                break
+
+            all_files.extend(files)
+
+            # Check if there are more pages
+            if len(files) < per_page:
+                break
+
+            page += 1
+
+        return all_files
+
     async def execute_graphql(
         self,
         query: str,

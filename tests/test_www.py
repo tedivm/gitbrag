@@ -1,5 +1,8 @@
 """Tests for FastAPI web application."""
 
+import pytest
+
+from gitbrag.settings import settings
 from gitbrag.www import app
 
 
@@ -24,6 +27,10 @@ def test_home_page(fastapi_client):
     assert b"Login with GitHub" in response.content
 
 
+@pytest.mark.skipif(
+    not settings.github_app_client_id or not settings.github_app_client_secret,
+    reason="OAuth credentials not configured (GITHUB_APP_CLIENT_ID and GITHUB_APP_CLIENT_SECRET required)",
+)
 def test_login_route_exists(fastapi_client):
     """Test that login route redirects to GitHub."""
     response = fastapi_client.get("/auth/login", follow_redirects=False)

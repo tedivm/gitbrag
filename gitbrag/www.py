@@ -6,6 +6,7 @@ from datetime import datetime
 from logging import getLogger
 from typing import Any
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
@@ -428,18 +429,37 @@ async def user_report(
                 authenticated_user=None,  # Will be updated after parallel calls
             )
 
-        # Execute API operations in parallel
-        results = await asyncio.gather(
-            get_auth_user(),
-            get_report(),
-            return_exceptions=False,
-        )
+        try:
+            # Execute API operations in parallel
+            results = await asyncio.gather(
+                get_auth_user(),
+                get_report(),
+                return_exceptions=False,
+            )
 
-        _ = results[0]  # authenticated_user - fetched to verify token but not used in template
-        report_data, metadata = results[1]
+            _ = results[0]  # authenticated_user - fetched to verify token but not used in template
+            report_data, metadata = results[1]
 
-        # Fetch profile using caching function (pass token, not client)
-        user_profile = await get_or_fetch_user_profile(username, token_str)
+            # Fetch profile using caching function (pass token, not client)
+            user_profile = await get_or_fetch_user_profile(username, token_str)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                # Token is invalid or expired - clear session and prompt re-login
+                logger.warning(f"GitHub token expired or invalid for user report: {e}")
+                clear_session(request)
+                return templates.TemplateResponse(
+                    request=request,
+                    name="error.html",
+                    context={
+                        "error_code": 401,
+                        "error_title": "Session Expired",
+                        "error_message": "Your GitHub authentication has expired. Please log in again to continue.",
+                        "show_login": True,
+                    },
+                    status_code=401,
+                )
+            # Re-raise other HTTP errors
+            raise
     else:
         # No token available, just get the report without authentication
         report_data, metadata = await get_or_generate_report(

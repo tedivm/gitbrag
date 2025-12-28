@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}GitBrag - Showcase Your GitHub Contributions{% endblock %}
+{% block title %}git brag - like git blame, but for your achievements{% endblock %}
 
 {% block content %}
 <div style="max-width: 1000px; margin: 0 auto;">
   <!-- Hero Section -->
   <div class="card" style="text-align: center; padding: 3rem 2rem; margin-bottom: 2rem;">
-    <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">GitBrag</h1>
-    <p style="font-size: 1.5rem; color: var(--text-secondary); margin-bottom: 2rem;">
-      Showcase Your GitHub Contributions
+    <h1 style="font-size: 2.5rem; margin-bottom: 1rem; font-family: 'Courier New', monospace;">$ git brag</h1>
+    <p style="font-size: 1.5rem; color: var(--text-secondary); margin-bottom: 2rem; font-family: 'Courier New', monospace;">
+      like git blame, but for your achievements
     </p>
     <p style="font-size: 1.125rem; color: var(--text-secondary); max-width: 700px; margin: 0 auto 2rem;">
-      Track and visualize your pull request contributions across all of GitHub: not just your own repositories.
-      Perfect for building your resume, justifying promotions, or simply celebrating your open source impact.
+      Aggregates your merged PRs across all repos you've touched. Because sometimes you need receipts for all those
+      late-night commits and bug fixes nobody remembers.
     </p>
 
     {% if authenticated and username %}
     <div style="margin: 2rem 0;">
       <a href="/user/github/{{ username }}" class="btn btn-primary" style="font-size: 1.25rem; padding: 1rem 2.5rem;">
-        View Your Contribution Report
+        $ git brag --username {{ username }}
       </a>
     </div>
     <p style="margin-top: 1rem;">
@@ -27,81 +27,80 @@
     {% else %}
     <div style="margin: 2rem 0;">
       <a href="/auth/login" class="btn btn-primary" style="font-size: 1.25rem; padding: 1rem 2.5rem;">
-        Login with GitHub to Get Started
+        $ git brag --login
       </a>
     </div>
     {% endif %}
   </div>
 
-  <!-- What GitBrag Does -->
+  <!-- What git brag Does -->
   <div class="card" style="margin-bottom: 2rem;">
-    <h2 style="margin-bottom: 1.5rem; text-align: center;">What GitBrag Does</h2>
+    <h2 style="margin-bottom: 1.5rem;">// what it does</h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
-      <div style="text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
-        <h3 style="margin-bottom: 0.5rem;">Comprehensive Tracking</h3>
+      <div>
+        <h3 style="margin-bottom: 0.5rem; font-family: 'Courier New', monospace;">$ grep -r "author:you"</h3>
         <p style="color: var(--text-secondary);">
-          Automatically finds all your pull requests across GitHub, including contributions to projects outside your own
-          repositories.
+          Finds every PR you've authored across all of GitHub, not just your repos. Even that one-line typo fix in a
+          random project counts.
         </p>
       </div>
-      <div style="text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
-        <h3 style="margin-bottom: 0.5rem;">Beautiful Reports</h3>
+      <div>
+        <h3 style="margin-bottom: 0.5rem; font-family: 'Courier New', monospace;">$ git log --graph</h3>
         <p style="color: var(--text-secondary);">
-          Generate clean, shareable reports showing your merged, open, and closed PRs with repository breakdowns and
-          statistics.
+          Clean reports of merged, open, and abandoned PRs. Filterable by date range because your commit history from
+          2015 is still relevant (maybe).
         </p>
       </div>
-      <div style="text-align: center;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚀</div>
-        <h3 style="margin-bottom: 0.5rem;">Multiple Use Cases</h3>
+      <div>
+        <h3 style="margin-bottom: 0.5rem; font-family: 'Courier New', monospace;">$ git diff stats</h3>
         <p style="color: var(--text-secondary);">
-          Perfect for resumes, performance reviews, promotion justifications, or simply tracking your open source
-          journey.
+          Shows which repos got your attention, star growth on projects you touched, and other metrics that look good on
+          that promotion doc.
         </p>
       </div>
     </div>
   </div>
 
-  <!-- Key Features -->
+  <!-- Technical Details -->
   <div class="card" style="margin-bottom: 2rem;">
-    <h2 style="margin-bottom: 1.5rem;">Key Features</h2>
+    <h2 style="margin-bottom: 1.5rem;">// technical details</h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
       <div>
-        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Cross-Repository Discovery</h3>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem; font-family: 'Courier New', monospace;">--all-repos</h3>
         <p style="color: var(--text-secondary);">
-          Captures all your contributions, not just those in your own repos
+          Scans GitHub's search API for PRs authored by you. Catches contributions to any public repo, not just ones you
+          own or star.
         </p>
       </div>
       <div>
-        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Flexible Date Ranges</h3>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem; font-family: 'Courier New', monospace;">--since &lt;date&gt;</h3>
         <p style="color: var(--text-secondary);">
-          View contributions from 1 year, 2 years, 5 years, or all time
+          Filter by 1yr, 2yr, 5yr, or all time. Uses GitHub's created date field, not your local git history.
         </p>
       </div>
       <div>
-        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Repository Analytics</h3>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem; font-family: 'Courier New', monospace;">--stats</h3>
         <p style="color: var(--text-secondary);">
-          See which repositories you've contributed to most frequently
+          Groups PRs by repo with counts. Also tracks star increases during your contribution window (vanity metrics, we
+          know).
         </p>
       </div>
       <div>
-        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Star Impact Tracking</h3>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem; font-family: 'Courier New', monospace;">--cache</h3>
         <p style="color: var(--text-secondary);">
-          Track the growth of stars in repositories where you've contributed
+          Reports are cached in Redis. No login needed to view once generated. Share URLs freely.
         </p>
       </div>
       <div>
-        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Easy Sharing</h3>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem; font-family: 'Courier New', monospace;">--public-only</h3>
         <p style="color: var(--text-secondary);">
-          Share your contributions via simple URLs: once generated, no login required to view
+          OAuth only requests read:user scope. Your private repos stay private. We can't see them even if we wanted to.
         </p>
       </div>
       <div>
-        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem;">✓ Privacy Focused</h3>
+        <h3 style="font-size: 1.125rem; margin-bottom: 0.5rem; font-family: 'Courier New', monospace;">--cli</h3>
         <p style="color: var(--text-secondary);">
-          Only public contributions are shown, respecting repository privacy. We only request permission to view public data: no access to private repositories.
+          Web interface is just one option. Full CLI available via pip install. Same data, different output format.
         </p>
       </div>
     </div>
@@ -109,13 +108,13 @@
 
   <!-- Example Report -->
   <div class="card" style="text-align: center; padding: 2rem;">
-    <h2 style="margin-bottom: 1rem;">See It In Action</h2>
+    <h2 style="margin-bottom: 1rem; font-family: 'Courier New', monospace;">$ git brag --example</h2>
     <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-      Check out an example contribution report to see what GitBrag can do:
+      Check actual output (not a demo, this is real data):
     </p>
     <a href="/user/github/{{ example_username }}" class="btn btn-secondary"
-      style="font-size: 1.125rem; padding: 0.75rem 2rem;">
-      View Example Report (@{{ example_username }})
+      style="font-size: 1.125rem; padding: 0.75rem 2rem; font-family: 'Courier New', monospace;">
+      @{{ example_username }}
     </a>
   </div>
 </div>

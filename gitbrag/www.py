@@ -10,6 +10,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
+from urllib.parse import quote
 
 from gitbrag.services.auth import get_optional_github_client
 from gitbrag.services.background_tasks import generate_params_hash, schedule_report_generation
@@ -461,7 +462,9 @@ async def user_report(
 
             # If force refresh, redirect to normal URL to prevent refresh loop
             if force:
-                redirect_url = f"/user/github/{username}?period={period}"
+                safe_username = quote(username, safe="")
+                safe_period = quote(period, safe="")
+                redirect_url = f"/user/github/{safe_username}?period={safe_period}"
                 return RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
         else:
             logger.info(f"Background task not scheduled (already active or rate limited) for {username}")

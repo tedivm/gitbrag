@@ -4,17 +4,33 @@ services:
       dockerfile: ./dockerfile.www
     volumes:
       - "./gitbrag:/app/gitbrag"
-      - "./db:/app/db"
       - "./docker/www/prestart.sh:/app/prestart.sh"
     ports:
       - "80:80"
     environment:
       IS_DEV: true
       RELOAD: true
+      CACHE_ENABLED: true
       CACHE_REDIS_HOST: redis
       CACHE_REDIS_PORT: 6379
+      GITHUB_AUTH_TYPE: ${GITHUB_AUTH_TYPE}
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID}
+      GITHUB_APP_CLIENT_SECRET: ${GITHUB_APP_CLIENT_SECRET}
+      GITHUB_OAUTH_CALLBACK_PORT: ${GITHUB_OAUTH_CALLBACK_PORT}
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
+      SESSION_MAX_AGE: ${SESSION_MAX_AGE}
+      OAUTH_CALLBACK_URL: ${OAUTH_CALLBACK_URL}
+      REQUIRE_HTTPS: ${REQUIRE_HTTPS}
+      OAUTH_SCOPES: ${OAUTH_SCOPES}
+      REPORT_CACHE_STALE_AGE: ${REPORT_CACHE_STALE_AGE}
     depends_on:
       - redis
 
   redis:
     image: redis
+    command: redis-server --save 60 1000 --save 300 100 --save 900 1
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:

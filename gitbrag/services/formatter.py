@@ -65,9 +65,10 @@ def format_pr_list(
     # Add rows
     for pr in sorted_prs:
         # Color code based on state
-        if pr.state == "closed" and pr.merged_at:
+        display_state = pr.get_display_state()
+        if display_state == "merged":
             state_display = "[green]merged[/green]"
-        elif pr.state == "open":
+        elif display_state == "open":
             state_display = "[blue]open[/blue]"
         else:
             state_display = "[yellow]closed[/yellow]"
@@ -137,13 +138,14 @@ def _sort_pull_requests(
             if field == "repository":
                 return pr.repository
             elif field == "state":
-                # Sort order: merged (closed with merged_at), open, closed (no merged_at)
-                if pr.state == "closed" and pr.merged_at:
-                    return (0,)  # merged first
-                elif pr.state == "open":
-                    return (1,)
+                # Sort order: merged, open, closed
+                display_state = pr.get_display_state()
+                if display_state == "merged":
+                    return 0
+                elif display_state == "open":
+                    return 1
                 else:
-                    return (2,)  # closed without merge last
+                    return 2
             elif field == "created_at":
                 return pr.created_at
             elif field == "merged_at":

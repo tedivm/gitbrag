@@ -10,8 +10,13 @@ New to this project? Start here:
 2. **[Dependencies](./dependencies.md)** - Managing project dependencies, virtual environments, and package installation
 3. **[Settings](./settings.md)** - Environment configuration and settings management
 4. **[Docker](./docker.md)** - Containerization, deployment, and local development with Docker
+5. **[Deployment](./deployment.md)** - Production deployment with Docker Compose, Redis persistence, and operational best practices
 
 ## Core Features
+
+### [Web Interface](./web.md)
+
+Browser-based interface with GitHub OAuth authentication, session management, and cached report generation.
 
 ### [Caching](./cache.md)
 

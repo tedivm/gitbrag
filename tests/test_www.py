@@ -15,25 +15,36 @@ def test_static_files_mounted():
     assert "/static" in routes or any("/static" in route for route in routes)
 
 
-def test_root_redirects_to_docs(fastapi_client):
-    """Test that root path redirects to /docs."""
-    response = fastapi_client.get("/", follow_redirects=False)
-    assert response.status_code == 307  # Temporary redirect
-    assert response.headers["location"] == "/docs"
-
-
-def test_root_redirect_follows(fastapi_client):
-    """Test that following redirect from root goes to docs."""
-    response = fastapi_client.get("/", follow_redirects=True)
-    assert response.status_code == 200
-    # Should reach the OpenAPI docs page
-
-
-def test_docs_accessible(fastapi_client):
-    """Test that /docs endpoint is accessible."""
-    response = fastapi_client.get("/docs")
+def test_home_page(fastapi_client):
+    """Test that home page is accessible."""
+    response = fastapi_client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers.get("content-type", "")
+    assert b"GitBrag" in response.content
+    assert b"Login with GitHub" in response.content
+
+
+def test_login_route_exists(fastapi_client):
+    """Test that login route redirects to GitHub."""
+    response = fastapi_client.get("/auth/login", follow_redirects=False)
+    # Should redirect to GitHub OAuth
+    assert response.status_code in (302, 307)
+    assert "github.com" in response.headers.get("location", "")
+
+
+def test_logout_route(fastapi_client):
+    """Test that logout route redirects to home."""
+    response = fastapi_client.get("/auth/logout", follow_redirects=False)
+    assert response.status_code in (302, 307)
+    assert response.headers.get("location") == "/"
+
+
+def test_error_404(fastapi_client):
+    """Test 404 error handling."""
+    response = fastapi_client.get("/nonexistent-page")
+    assert response.status_code == 404
+    assert b"404" in response.content
+    assert b"Not Found" in response.content
 
 
 def test_openapi_schema(fastapi_client):

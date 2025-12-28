@@ -1,0 +1,21 @@
+{# Repository section component - displays PRs for a single repository #}
+<div class="repo-section">
+  <div class="repo-header">
+    <h3 class="repo-name">
+      <a href="https://github.com/{{ repo_owner }}/{{ repo_name }}" target="_blank">
+        {{ repo_owner }}/{{ repo_name }}
+      </a>
+    </h3>
+    {% if description %}
+    <p class="repo-description">{{ description }}</p>
+    {% endif %}
+    <div class="repo-stats">
+      {{ pr_count }} PR{{ "s" if pr_count != 1 else "" }}
+      {% if star_increase is defined and star_increase != 0 %}
+      | {% if star_increase == -1 %}>1000{% else %}+{{ star_increase }}{% endif %} ⭐
+      {% endif %}
+    </div>
+  </div>
+
+  {{ pr_table_html | safe }}
+</div>

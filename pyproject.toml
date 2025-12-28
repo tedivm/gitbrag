@@ -24,8 +24,10 @@ dev = [
 authors = [{"name" = "Robert Hafner"}]
 dependencies = [
   "aiocache",
+  "cryptography",
   "fastapi",
   "httpx",
+  "itsdangerous",
   "jinja2",
   "pydantic~=2.0",
   "pydantic-settings",

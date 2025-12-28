@@ -1,3 +1,10 @@
+import os
+
+# Set required environment variables for testing BEFORE any gitbrag imports
+# This must happen before settings are loaded
+if "SESSION_SECRET_KEY" not in os.environ:
+    os.environ["SESSION_SECRET_KEY"] = "test-secret-key-for-testing-purposes-only-min-32-chars"
+
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient

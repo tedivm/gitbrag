@@ -63,7 +63,7 @@ The system MUST cache generated reports in Redis using standardized period names
 **When** the request is processed
 **Then** the system schedules a background task to generate the report
 **And** the system immediately returns a "Generating Report" page
-**And** the page displays a loading spinner and message: "Your report is being generated. This may take 10-30 seconds."
+**And** the page displays a loading spinner and message: "Your report is being generated. This may take 10 seconds to several minutes."
 **And** the page includes a "Refresh" button or auto-refresh meta tag
 **And** when the user refreshes after the background task completes, they see the full report
 

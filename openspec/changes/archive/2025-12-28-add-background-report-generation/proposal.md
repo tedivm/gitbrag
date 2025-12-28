@@ -8,7 +8,7 @@ Improve user experience and application performance by moving report generation 
 
 Currently, when users visit a report page, the entire report generation process happens synchronously within the HTTP request handler. This creates several UX and performance issues:
 
-1. **Poor initial load experience**: Users must wait for the full report generation to complete before seeing any content, which can take 10-30 seconds for users with many contributions
+1. **Poor initial load experience**: Users must wait for the full report generation to complete before seeing any content, which can take 10 seconds to several minutes for users with many contributions
 2. **Redundant work**: Multiple users accessing the same report simultaneously trigger duplicate API calls and report generation
 3. **Wasted resources**: The same report (same user, same period) is generated multiple times when it could be shared
 4. **Timeout risk**: Long-running report generation can hit HTTP timeout limits
@@ -174,7 +174,7 @@ See [tasks.md](./tasks.md) for detailed implementation checklist.
 
 ## Success Metrics
 
-- Report page load time: < 2 seconds (from 10-30 seconds)
+- Report page load time: < 2 seconds (from 10 seconds to several minutes)
 - Cache hit rate: > 80% for popular reports
 - Duplicate report generation: < 5% of requests
 - User satisfaction: Measured via feedback/support tickets

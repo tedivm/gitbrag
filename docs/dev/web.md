@@ -30,13 +30,13 @@ This starts both the web server and Redis cache.
 uv sync
 ```
 
-2. Start Redis:
+1. Start Redis:
 
 ```bash
 docker run -p 6379:6379 redis:alpine
 ```
 
-3. Configure environment variables (`.env`):
+1. Configure environment variables (`.env`):
 
 ```env
 # GitHub OAuth
@@ -52,7 +52,7 @@ REQUIRE_HTTPS=false
 OAUTH_SCOPES=read:user
 ```
 
-4. Start the web server:
+1. Start the web server:
 
 ```bash
 uvicorn gitbrag.www:app --host 0.0.0.0 --port 80
@@ -98,8 +98,36 @@ uvicorn gitbrag.www:app --host 0.0.0.0 --port 80
 - Reports are cached in Redis with period-based keys
 - Cache keys include username, period, and feature flags (like star increase)
 - Cached reports include metadata (creation time, creator)
-- Stale reports are auto-refreshed when accessed by authenticated users
-- Unauthenticated users see stale cached reports but cannot refresh
+- Stale reports (older than `REPORT_CACHE_STALE_AGE`, default 24h) trigger background regeneration for authenticated users
+- Unauthenticated users see cached reports but cannot trigger regeneration
+
+### Background Report Generation
+
+The web interface uses FastAPI BackgroundTasks for asynchronous report generation, providing instant page loads while reports generate in the background.
+
+**Key Features:**
+
+- **Instant Response**: Serve cached reports immediately when available
+- **Background Refresh**: Stale reports trigger background regeneration automatically
+- **Task Deduplication**: Prevents multiple simultaneous generation of the same report
+- **Per-User Rate Limiting**: Only one report generates at a time per GitHub username
+- **Visual Feedback**: Spinner and auto-refresh during generation
+
+**Request Flow:**
+
+1. **Authenticated + Fresh Cache** (<24h): Serve immediately
+2. **Authenticated + Stale Cache** (≥24h): Serve with "updating" notice + background refresh
+3. **Authenticated + No Cache**: Show "generating" message + background task
+4. **Unauthenticated**: Serve cache if available, show "Login to Refresh" if stale
+
+**Task Tracking** (Redis-based):
+
+- Task keys: `task:report:{username}:{period}:{params_hash}`
+- User keys: `task:user:{username}:active` (per-user rate limiting)
+- TTL: 300s (auto-cleanup for hung tasks)
+- Max tasks per user: 1 (configurable via `MAX_REPORTED_USER_CONCURRENT_TASKS`)
+
+See [Cache Documentation](cache.md) for detailed caching patterns.
 
 ### Authentication Flow
 

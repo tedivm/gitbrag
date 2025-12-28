@@ -180,7 +180,7 @@ class GitHubOAuthFlow:
         }
 
         auth_url = f"{self.GITHUB_AUTHORIZE_URL}?{urlencode(params)}"
-        logger.info(f"Opening browser for OAuth authorization: {auth_url}")
+        logger.info(f"Opening browser for OAuth authorization with scopes: {', '.join(scopes)}")
 
         # Open browser for user authorization
         webbrowser.open(auth_url)

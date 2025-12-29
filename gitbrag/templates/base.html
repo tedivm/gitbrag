@@ -4,9 +4,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  {# Basic meta tags #}
+  <meta name="description"
+    content="{% block meta_description %}Create professional GitHub contribution reports for performance reviews and portfolio building{% endblock %}">
+  <meta name="author" content="Robert Hafner">
+  <meta name="keywords" content="github, open source, contributions, portfolio">
+
+  {# Open Graph meta tags for social media #}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="git brag">
+  <meta property="og:url" content="{{ request.url }}">
+  <meta property="og:title" content="{% block og_title %}git brag - GitHub Contribution Reports{% endblock %}">
+  <meta property="og:description"
+    content="{% block og_description %}Create professional GitHub contribution reports for performance reviews and portfolio building{% endblock %}">
+  <meta property="og:image"
+    content="{% block og_image %}{{ request.url.scheme }}://{{ request.url.netloc }}/static/images/og-image.png{% endblock %}">
+
+  {# Twitter Card meta tags #}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}{{ self.og_title() }}{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}{{ self.og_description() }}{% endblock %}">
+  <meta name="twitter:image" content="{% block twitter_image %}{{ self.og_image() }}{% endblock %}">
+
   <title>{% block title %}git brag - GitHub Contribution Reports{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/styles.css">
   <script src="/static/js/theme.js"></script>
+
+  {# Plausible Analytics (optional, privacy-friendly) #}
+  {% if settings and settings.enable_plausible and settings.plausible_script_hash %}
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/{{ settings.plausible_script_hash }}.js"></script>
+  <script>
+    window.plausible = window.plausible || function () { (plausible.q = plausible.q || []).push(arguments) }, plausible.init = plausible.init || function (i) { plausible.o = i || {} };
+    plausible.init()
+  </script>
+  {% endif %}
+
   {% block extra_head %}{% endblock %}
 </head>
 

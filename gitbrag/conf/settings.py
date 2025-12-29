@@ -58,6 +58,16 @@ class WebSettings(BaseSettings):
         description="Maximum concurrent report generation tasks per reported GitHub username",
     )
 
+    # Analytics settings
+    enable_plausible: bool = Field(
+        default=False,
+        description="Enable Plausible Analytics privacy-friendly tracking. Requires PLAUSIBLE_SCRIPT_HASH to be set.",
+    )
+    plausible_script_hash: str | None = Field(
+        default=None,
+        description="Site-specific Plausible script hash (e.g., 'pa-HQtsjLCgyK7ys8q_iRTLl'). Find this in your Plausible site settings under 'Site Installation'.",
+    )
+
 
 class Settings(CacheSettings, GitHubSettings, WebSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

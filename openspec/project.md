@@ -2,7 +2,7 @@
 
 ## Purpose
 
-GitBrag is a tool that utilizes the GitHub API to generate comprehensive reports of open source contributions made over a specified period of time. The primary goal is to help developers create professional contribution reports that can be used for:
+Git Brag is a tool that utilizes the GitHub API to generate comprehensive reports of open source contributions made over a specified period of time. The primary goal is to help developers create professional contribution reports that can be used for:
 
 - Performance reviews and promotions
 - Professional portfolio building
@@ -219,13 +219,13 @@ The system integrates with the GitHub API to collect contribution data:
   - Personal Access Tokens (PAT) for CLI usage
   - GitHub OAuth flow for web-based authentication
   - Token encryption using Fernet (AES-128-CBC + HMAC-SHA256)
-  
+
 - **Data Collection**:
   - Pull requests (authored by user)
   - Repository information
   - Star counts and increases over time
   - Pagination handling for large result sets
-  
+
 - **API Considerations**:
   - Rate limit management and monitoring
   - Caching to minimize API calls
@@ -242,7 +242,7 @@ The system provides multiple interfaces for generating and viewing contribution 
   - Sorting options (repository, state, created, merged, title, stars)
   - Optional URL display and star increase tracking
   - Private repository inclusion support
-  
+
 - **Web Interface**:
   - HTML reports at `/user/github/{username}`
   - OAuth authentication flow
@@ -250,7 +250,7 @@ The system provides multiple interfaces for generating and viewing contribution 
   - Public caching for shareable reports
   - Responsive design for mobile and desktop
   - Date range selection via query parameters
-  
+
 - **Report Content**:
   - High-level summary (total PRs, merged count, etc.)
   - Repository-level breakdown

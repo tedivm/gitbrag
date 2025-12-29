@@ -81,6 +81,9 @@ def generate_cache_key(username: str, period: str, show_star_increase: bool = Fa
     Returns:
         Cache key string
     """
+    # Normalize username to lowercase for consistent cache keys
+    username = username.lower()
+
     # Create hash of parameters
     params = {"show_star_increase": show_star_increase}
     params_hash = hashlib.md5(json.dumps(params, sort_keys=True).encode()).hexdigest()[:8]
@@ -104,8 +107,12 @@ async def get_or_fetch_user_profile(
     Returns:
         User profile dictionary or None if not available
     """
+    # Normalize username to lowercase for consistent cache keys
+    # (GitHub API will still receive original case, as it's case-preserving)
+    username_lower = username.lower()
+
     cache = get_cache("persistent")
-    cache_key = f"profile:{username}"
+    cache_key = f"profile:{username_lower}"
     meta_key = f"{cache_key}:meta"
 
     # Try to get from cache first
@@ -134,6 +141,16 @@ async def get_or_fetch_user_profile(
             async with GitHubAPIClient(token=SecretStr(token)) as client:
                 profile = await client.get_user(username)
                 if profile:
+                    # Fetch social accounts and merge into profile
+                    try:
+                        social_accounts = await client.get_user_social_accounts(username)
+                        profile["social_accounts"] = social_accounts
+                        logger.debug(f"Fetched {len(social_accounts)} social accounts for {username}")
+                    except Exception as e:
+                        # Log but don't fail if social accounts fetch fails
+                        logger.warning(f"Failed to fetch social accounts for {username}: {e}")
+                        profile["social_accounts"] = []
+
                     # Cache permanently (no TTL)
                     metadata = {"cached_at": datetime.now().timestamp()}
                     await cache.set(cache_key, profile)

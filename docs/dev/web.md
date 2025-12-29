@@ -138,15 +138,27 @@ See [Cache Documentation](cache.md) for detailed caching patterns.
 5. Token is encrypted and stored in session
 6. User is redirected to original page
 
+### Username Normalization
+
+GitHub usernames are case-insensitive, but GitBrag normalizes them to lowercase for consistent caching and URL handling:
+
+- **Cache Keys**: All cache keys use lowercase usernames to prevent duplicate entries
+- **URL Redirects**: URLs with uppercase usernames automatically redirect (301 Permanent) to lowercase
+- **Query Preservation**: Redirects preserve all query parameters (e.g., `?period=2_years`)
+- **SEO Benefit**: Canonical lowercase URLs prevent duplicate content issues
+
+Example: `/user/github/TEDIVM` → 301 Redirect → `/user/github/tedivm`
+
 ### Report Generation
 
 1. User visits `/user/github/{username}?period={period}`
-2. System checks for cached report
-3. If cache is stale and user is authenticated, regenerate
-4. If no cache and user is not authenticated, show 404
-5. Generate report by collecting PRs from GitHub API
-6. Store report in cache with metadata
-7. Render report template with data
+2. If username contains uppercase, 301 redirect to lowercase URL
+3. System checks for cached report (using lowercase username)
+4. If cache is stale and user is authenticated, regenerate
+5. If no cache and user is not authenticated, show 404
+6. Generate report by collecting PRs from GitHub API
+7. Store report in cache with metadata
+8. Render report template with data
 
 ## Routes
 

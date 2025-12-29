@@ -396,6 +396,22 @@ async def user_report(
     Returns:
         Rendered user report template
     """
+    # Redirect uppercase usernames to lowercase for URL consistency
+    if username != username.lower():
+        username_lower = username.lower()
+        # Build redirect URL with query parameters
+        redirect_url = f"/user/github/{quote(username_lower, safe='')}"
+        query_params = []
+        if period != "1_year":  # Only include non-default period
+            query_params.append(f"period={quote(period, safe='')}")
+        if force:
+            query_params.append("force=true")
+        if query_params:
+            redirect_url += "?" + "&".join(query_params)
+
+        logger.debug(f"Redirecting {username} to {username_lower}")
+        return RedirectResponse(url=redirect_url, status_code=301)
+
     # Normalize period parameter
     period = normalize_period(period)
     logger.info(f"User report for {username}, period={period}, force={force}")

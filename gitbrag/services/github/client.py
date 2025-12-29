@@ -142,6 +142,40 @@ class GitHubAPIClient:
         result: dict[str, Any] = response.json()
         return result
 
+    async def get_user_social_accounts(self, username: str) -> list[dict[str, Any]]:
+        """Get social media accounts for a GitHub user.
+
+        Fetches social accounts from GitHub's /users/{username}/social_accounts endpoint,
+        which returns accounts for platforms like Mastodon, LinkedIn, and Bluesky.
+
+        Args:
+            username: GitHub username
+
+        Returns:
+            List of social account dictionaries with 'provider' and 'url' keys.
+            Returns empty list if user has no social accounts or if request fails.
+
+        Note:
+            This method handles errors gracefully by returning an empty list rather
+            than raising exceptions, as social accounts are optional profile data.
+        """
+        try:
+            response = await self._request_with_retry("GET", f"{self.base_url}/users/{username}/social_accounts")
+            result: list[dict[str, Any]] = response.json()
+            return result
+        except httpx.HTTPStatusError as e:
+            # 404 means user has no social accounts configured
+            if e.response.status_code == 404:
+                logger.debug(f"No social accounts found for {username}")
+                return []
+            # Log other errors but don't fail the request
+            logger.warning(f"Failed to fetch social accounts for {username}: {e}")
+            return []
+        except Exception as e:
+            # Handle any other unexpected errors gracefully
+            logger.warning(f"Unexpected error fetching social accounts for {username}: {e}")
+            return []
+
     async def get_repository(self, owner: str, repo: str) -> dict[str, Any]:
         """Get public information about a GitHub repository.
 

@@ -1,71 +1,77 @@
 # git brag
 
-Create a brag list of open source contributions. View your contributions at [gitbrag.tedivm.com](https://gitbrag.tedivm.com).
+**Create professional contribution reports for your GitHub open source work.**
+
+Showcase your impact with comprehensive reports perfect for performance reviews, portfolio building, and demonstrating your open source contributions.
+
+**[✨ Try it now at gitbrag.tedivm.com](https://gitbrag.tedivm.com)** — No installation required!
+
+## Why GitBrag?
+
+- **Easy to Use**: Login with GitHub OAuth — no tokens or configuration needed
+- **Professional Reports**: Beautiful, shareable contribution summaries with detailed statistics
+- **Fast & Cached**: Instant page loads with smart caching and background generation
+- **Privacy-Friendly**: Only accesses publicly available GitHub data
+- **Rich Insights**: Code statistics, language breakdown, PR sizes, and repository roles
 
 ## Features
 
-- **CLI**: Command-line interface for generating reports
-- **Web Interface**: Browser-based interface with GitHub OAuth authentication
-- **Background Report Generation**: Asynchronous report processing for instant page loads
-- **Smart Caching**: Redis-backed two-tier caching with automatic staleness detection
-- **Code Statistics**: Shows lines added, deleted, and files changed per PR
-- **Language Analysis**: Detects programming languages from file extensions
-- **PR Size Categories**: Categorizes PRs as One Liner, Small, Medium, Large, Huge, or Massive
-- **Repository Roles**: Displays contributor relationship (Owner, Member, Contributor)
-- **Public Data**: Only accesses publicly available GitHub data
-- **Flexible Filtering**: Filter by date range and repository
-- **Multiple Formats**: Rich terminal output and web views
+### Web Interface (Recommended)
 
-### Performance
+Visit **[gitbrag.tedivm.com](https://gitbrag.tedivm.com)** to:
 
-The web interface provides excellent performance through several optimizations:
+- **Generate reports instantly** with GitHub OAuth authentication
+- **Share your achievements** with clean, professional URLs
+- **Track your progress** with cached reports and automatic refresh
+- **No setup required** — works in any browser
 
-- **Instant Page Loads**: Cached reports served in <2 seconds (vs. 10 seconds to several minutes for generation)
-- **Background Generation**: Reports generate asynchronously without blocking page loads
+The web interface provides:
+
+- **Instant Page Loads**: Cached reports served in <2 seconds
+- **Background Generation**: Reports generate asynchronously without blocking
 - **Smart Auto-Refresh**: Pages automatically reload every 10 seconds during generation
-- **Task Deduplication**: Prevents redundant work when multiple users request the same report
-- **Per-User Rate Limiting**: Sequential generation reuses cached data, reducing API calls by 50-70%
-- **Two-Tier Caching**: Intermediate PR file caching (6h TTL) + permanent report caching
+- **Code Statistics**: Lines added, deleted, and files changed per PR
+- **Language Analysis**: Programming language breakdown
+- **PR Size Categories**: One Liner, Small, Medium, Large, Huge, or Massive
+- **Repository Roles**: Owner, Member, or Contributor status
 
-## Installation
+### Command-Line Interface
+
+For automation and power users, GitBrag is also available as a CLI tool:
 
 ```bash
+# Install
 pip install gitbrag
-```
 
-Or run directly with `uvx` without installing:
-
-```bash
+# Or run directly with uvx (no installation)
 uvx gitbrag list <username>
 ```
 
-## Quick Start
+## Getting Started
 
-### CLI
+### Web Interface (Easiest)
 
-```bash
-# List your contributions from the past year
-gitbrag list your-username
+1. Visit **[gitbrag.tedivm.com](https://gitbrag.tedivm.com)**
+2. Login with your GitHub account
+3. View your contribution report instantly!
 
-# Or with date range
-gitbrag list your-username --since 2024-12-14 --until 2025-12-14
-```
+Share your report URL with others or use it in performance reviews and portfolios.
 
-### Web Interface
+### Self-Hosting
 
-Start the web interface with Docker Compose:
+Host your own instance with Docker:
 
 ```bash
 docker compose up
 ```
 
-Then visit `http://localhost` and login with GitHub to generate your report.
+Then visit `http://localhost` and login with GitHub.
 
 See [Web Interface Documentation](docs/dev/web.md) for detailed setup instructions.
 
-## Configuration
+### CLI Configuration
 
-Set your GitHub Personal Access Token:
+For command-line usage, set your GitHub Personal Access Token:
 
 ```bash
 export GITHUB_TOKEN="your_token_here"

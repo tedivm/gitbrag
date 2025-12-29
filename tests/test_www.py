@@ -146,3 +146,40 @@ def test_plausible_script_requires_both_settings(fastapi_client, monkeypatch):
     else:
         # Otherwise script should not be present
         assert "plausible.io" not in content.lower()
+
+def test_username_redirect_to_lowercase(fastapi_client):
+    """Test that uppercase usernames redirect to lowercase URLs with 301 status."""
+    # Test uppercase username redirects
+    response = fastapi_client.get("/user/github/TEDIVM", follow_redirects=False)
+    assert response.status_code == 301
+    assert response.headers.get("location") == "/user/github/tedivm"
+
+    # Test mixed case redirects
+    response = fastapi_client.get("/user/github/TedIVM", follow_redirects=False)
+    assert response.status_code == 301
+    assert response.headers.get("location") == "/user/github/tedivm"
+
+    # Test query parameters are preserved
+    response = fastapi_client.get("/user/github/TEDIVM?period=2_years&force=true", follow_redirects=False)
+    assert response.status_code == 301
+    location = response.headers.get("location")
+    assert location.startswith("/user/github/tedivm?")
+    assert "period=2_years" in location
+    assert "force=true" in location
+
+
+def test_empty_state_encouraging_message():
+    """Test that user_report.html template contains encouraging empty state message."""
+    # Read template and verify it contains the encouraging message
+    import os
+
+    template_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "gitbrag", "templates", "user_report.html"
+    )
+    with open(template_path) as f:
+        content = f.read()
+
+    # Verify the encouraging message is in the template
+    assert "Every open source journey starts somewhere" in content
+    assert "your next contribution is waiting" in content
+    assert "🚀" in content  # Rocket emoji

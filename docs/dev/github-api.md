@@ -220,6 +220,47 @@ Query components:
 - `author:username` - Filter by PR author
 - `updated:YYYY-MM-DD..YYYY-MM-DD` - Filter by last update/activity time
 
+### GitHub Users API
+
+For user profile data, the integration uses GitHub's [Users REST API](https://docs.github.com/en/rest/users):
+
+#### User Social Accounts
+
+GitBrag fetches social media profiles via the `/users/{username}/social_accounts` endpoint:
+
+```
+GET https://api.github.com/users/{username}/social_accounts
+```
+
+**Supported Providers:**
+
+- `mastodon` - Mastodon profile URLs
+- `linkedin` - LinkedIn profile URLs  
+- `bluesky` - Bluesky profile URLs
+
+**Response Format:**
+
+```json
+[
+  {
+    "provider": "mastodon",
+    "url": "https://mastodon.social/@username"
+  },
+  {
+    "provider": "linkedin",
+    "url": "https://www.linkedin.com/in/username"
+  }
+]
+```
+
+**Error Handling:**
+
+- Returns empty list on 404 (user not found or no social accounts configured)
+- Gracefully handles API failures without breaking profile display
+- Uses same retry logic as other endpoints for rate limiting
+
+**Display:** Social accounts are shown in user reports with emoji icons (Mastodon 🐘, LinkedIn 💼, Bluesky 🦋) alongside traditional `blog` and `twitter_username` fields.
+
 ### GitHub GraphQL API
 
 For star increase data, the integration uses GitHub's [GraphQL API](https://docs.github.com/en/graphql) to fetch stargazer timestamps:

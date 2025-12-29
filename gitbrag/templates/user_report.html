@@ -116,6 +116,17 @@ request.url.scheme }}://{{ request.url.netloc }}/static/images/og-image.png{% en
         <span class="user-meta-item">🐦 <a href="https://twitter.com/{{ user_profile.twitter_username }}"
             target="_blank">@{{ user_profile.twitter_username }}</a></span>
         {% endif %}
+        {% if user_profile.social_accounts %}
+        {% for account in user_profile.social_accounts %}
+        {% if account.provider == 'mastodon' %}
+        <span class="user-meta-item">🐘 <a href="{{ account.url }}" target="_blank">Mastodon</a></span>
+        {% elif account.provider == 'linkedin' %}
+        <span class="user-meta-item">💼 <a href="{{ account.url }}" target="_blank">LinkedIn</a></span>
+        {% elif account.provider == 'bluesky' %}
+        <span class="user-meta-item">🦋 <a href="{{ account.url }}" target="_blank">Bluesky</a></span>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
       </div>
     </div>
   </div>
@@ -209,7 +220,7 @@ request.url.scheme }}://{{ request.url.netloc }}/static/images/og-image.png{% en
   </div>
   {% else %}
   <div class="no-data">
-    <p>No pull requests found for this period.</p>
+    <p>No pull requests found for this period. Every open source journey starts somewhere—your next contribution is waiting! 🚀</p>
   </div>
   {% endif %}
 

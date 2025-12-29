@@ -446,3 +446,88 @@ async def test_search_all_issues_concurrent_limit(mock_client: GitHubAPIClient) 
         assert len(result) == 100
         # Verify the search_issues was called correct number of times
         assert mock_client.search_issues.call_count == total_pages
+
+@pytest.mark.asyncio
+async def test_get_user_social_accounts_success(mock_client: GitHubAPIClient) -> None:
+    """Test successful retrieval of user social accounts."""
+    username = "tedivm"
+    expected_accounts = [
+        {"provider": "mastodon", "url": "https://hachyderm.io/@tedivm"},
+        {"provider": "linkedin", "url": "https://www.linkedin.com/in/roberthafner/"},
+        {"provider": "bluesky", "url": "https://bsky.app/profile/tedivm.com"},
+    ]
+
+    with patch.object(mock_client, "_request_with_retry") as mock_request:
+        mock_response = AsyncMock()
+        mock_response.json = lambda: expected_accounts
+        mock_request.return_value = mock_response
+
+        result = await mock_client.get_user_social_accounts(username)
+
+        assert result == expected_accounts
+        mock_request.assert_called_once_with("GET", f"https://api.github.com/users/{username}/social_accounts")
+
+
+@pytest.mark.asyncio
+async def test_get_user_social_accounts_empty(mock_client: GitHubAPIClient) -> None:
+    """Test handling of user with no social accounts."""
+    username = "noaccounts"
+
+    with patch.object(mock_client, "_request_with_retry") as mock_request:
+        mock_response = AsyncMock()
+        mock_response.json = lambda: []
+        mock_request.return_value = mock_response
+
+        result = await mock_client.get_user_social_accounts(username)
+
+        assert result == []
+
+
+@pytest.mark.asyncio
+async def test_get_user_social_accounts_404(mock_client: GitHubAPIClient) -> None:
+    """Test handling of 404 response (user has no social accounts configured)."""
+    username = "user404"
+
+    with patch.object(mock_client, "_request_with_retry") as mock_request:
+        mock_response = AsyncMock()
+        mock_response.status_code = 404
+        mock_request.side_effect = httpx.HTTPStatusError(
+            "Not found", request=AsyncMock(), response=mock_response
+        )
+
+        result = await mock_client.get_user_social_accounts(username)
+
+        # Should return empty list instead of raising exception
+        assert result == []
+
+
+@pytest.mark.asyncio
+async def test_get_user_social_accounts_other_http_error(mock_client: GitHubAPIClient) -> None:
+    """Test handling of non-404 HTTP errors."""
+    username = "erroruser"
+
+    with patch.object(mock_client, "_request_with_retry") as mock_request:
+        mock_response = AsyncMock()
+        mock_response.status_code = 500
+        mock_request.side_effect = httpx.HTTPStatusError(
+            "Server error", request=AsyncMock(), response=mock_response
+        )
+
+        result = await mock_client.get_user_social_accounts(username)
+
+        # Should return empty list and log warning instead of raising exception
+        assert result == []
+
+
+@pytest.mark.asyncio
+async def test_get_user_social_accounts_unexpected_error(mock_client: GitHubAPIClient) -> None:
+    """Test handling of unexpected errors."""
+    username = "erroruser"
+
+    with patch.object(mock_client, "_request_with_retry") as mock_request:
+        mock_request.side_effect = Exception("Unexpected error")
+
+        result = await mock_client.get_user_social_accounts(username)
+
+        # Should return empty list and log warning instead of raising exception
+        assert result == []

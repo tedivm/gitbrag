@@ -183,3 +183,17 @@ def test_empty_state_encouraging_message():
     assert "next contribution" in content
     assert "waiting" in content
     assert "🚀" in content  # Rocket emoji
+
+
+def test_company_name_with_at_symbol_becomes_link():
+    """Test that company names starting with @ are converted to GitHub profile links."""
+    import os
+
+    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "gitbrag", "templates", "user_report.html")
+    with open(template_path) as f:
+        content = f.read()
+
+    # Verify the template has logic to convert @company to links
+    assert "user_profile.company.startswith('@')" in content
+    assert 'href="https://github.com/{{ user_profile.company[1:]' in content
+    assert 'target="_blank"' in content

@@ -102,7 +102,13 @@ request.url.scheme }}://{{ request.url.netloc }}/static/images/og-image.png{% en
       {% endif %}
       <div class="user-metadata">
         {% if user_profile.company %}
-        <span class="user-meta-item">🏢 {{ user_profile.company }}</span>
+        <span class="user-meta-item">🏢 
+          {% if user_profile.company.startswith('@') %}
+          <a href="https://github.com/{{ user_profile.company[1:] }}" target="_blank" rel="noopener noreferrer">{{ user_profile.company }}</a>
+          {% else %}
+          {{ user_profile.company }}
+          {% endif %}
+        </span>
         {% endif %}
         {% if user_profile.location %}
         <span class="user-meta-item">📍 {{ user_profile.location }}</span>

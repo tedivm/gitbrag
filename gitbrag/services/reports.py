@@ -12,6 +12,7 @@ from typing import Any
 
 from pydantic import SecretStr
 
+from gitbrag.conf.github import get_github_settings
 from gitbrag.services.cache import get_cache
 from gitbrag.services.github.client import GitHubAPIClient
 from gitbrag.services.github.models import PullRequestInfo
@@ -287,7 +288,13 @@ async def generate_report_data(
         repo_descriptions: dict[str, str | None] = {}
         unique_repos = list(repos.keys())
         if unique_repos:
-            logger.debug(f"Fetching descriptions for {len(unique_repos)} repositories")
+            # Get configured concurrency limit
+            settings = get_github_settings()
+            concurrency_limit = settings.github_repo_desc_fetch_concurrency
+            logger.debug(
+                f"Fetching descriptions for {len(unique_repos)} repositories "
+                f"with concurrency limit of {concurrency_limit}"
+            )
 
             async def fetch_repo_description(repo_full_name: str) -> tuple[str, str | None]:
                 """Fetch description for a single repository."""
@@ -307,7 +314,7 @@ async def generate_report_data(
             # Fetch all descriptions concurrently with limited parallelism
             import asyncio
 
-            semaphore = asyncio.Semaphore(10)
+            semaphore = asyncio.Semaphore(concurrency_limit)
 
             async def fetch_with_semaphore(repo_name: str) -> tuple[str, str | None]:
                 async with semaphore:

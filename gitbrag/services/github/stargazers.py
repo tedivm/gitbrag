@@ -166,7 +166,7 @@ async def collect_repository_star_increases(
     since: datetime,
     until: datetime,
     wait_for_rate_limit: bool = True,
-    max_concurrent: int = 10,
+    max_concurrent: int = 5,
 ) -> dict[str, int | None]:
     """Collect star increases for multiple repositories concurrently.
 
@@ -176,7 +176,7 @@ async def collect_repository_star_increases(
         since: Start of time period
         until: End of time period
         wait_for_rate_limit: If True, wait when rate limited; if False, raise exception
-        max_concurrent: Maximum number of concurrent repository fetches (default: 10)
+        max_concurrent: Maximum number of concurrent repository fetches (default: 5)
 
     Returns:
         Dictionary mapping repository name to star increase (or None if unavailable)
@@ -189,7 +189,7 @@ async def collect_repository_star_increases(
             seen.add(repo)
             unique_repos.append(repo)
 
-    logger.debug(
+    logger.info(
         f"Collecting star increases for {len(unique_repos)} unique repositories (max {max_concurrent} concurrent)"
     )
 

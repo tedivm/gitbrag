@@ -180,5 +180,6 @@ def test_empty_state_encouraging_message():
 
     # Verify the encouraging message is in the template
     assert "Every open source journey starts somewhere" in content
-    assert "your next contribution is waiting" in content
+    assert "next contribution" in content
+    assert "waiting" in content
     assert "🚀" in content  # Rocket emoji

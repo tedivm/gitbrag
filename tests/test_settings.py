@@ -182,8 +182,11 @@ def test_enable_plausible_attribute():
     assert isinstance(settings.enable_plausible, bool)
 
 
-def test_enable_plausible_defaults_to_false():
+def test_enable_plausible_defaults_to_false(monkeypatch):
     """Test that enable_plausible defaults to False."""
+    monkeypatch.delenv("ENABLE_PLAUSIBLE", raising=False)
+    # Prevent loading from .env file
+    monkeypatch.setattr("pydantic_settings.sources.DotEnvSettingsSource.__call__", lambda *args, **kwargs: {})
     test_settings = Settings()
     assert test_settings.enable_plausible is False
 
@@ -200,8 +203,11 @@ def test_plausible_script_hash_attribute():
     assert hasattr(settings, "plausible_script_hash")
 
 
-def test_plausible_script_hash_defaults_to_none():
+def test_plausible_script_hash_defaults_to_none(monkeypatch):
     """Test that plausible_script_hash defaults to None."""
+    monkeypatch.delenv("PLAUSIBLE_SCRIPT_HASH", raising=False)
+    # Prevent loading from .env file
+    monkeypatch.setattr("pydantic_settings.sources.DotEnvSettingsSource.__call__", lambda *args, **kwargs: {})
     test_settings = Settings()
     assert test_settings.plausible_script_hash is None
 

@@ -179,6 +179,11 @@ header {
     align-items: center;
 }
 
+.nav-links li {
+    display: flex;
+    align-items: center;
+}
+
 .nav-links a {
     color: var(--text-color);
     font-weight: 500;
@@ -202,6 +207,14 @@ header {
 .theme-toggle:hover {
     background-color: var(--bg-secondary);
     border-color: var(--primary-color);
+}
+
+/* Align GitHub button widget (rendered as iframe or span) */
+.nav-links li > span,
+.nav-links li > iframe {
+    display: flex !important;
+    align-items: center;
+    vertical-align: middle;
 }
 
 /* Main content */

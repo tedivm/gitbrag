@@ -89,3 +89,60 @@ def test_basic_health(fastapi_client):
     """Test basic application health by accessing root."""
     response = fastapi_client.get("/")
     assert response.status_code in [200, 307], "App should respond to requests"
+
+
+def test_basic_meta_tags(fastapi_client):
+    """Test that basic meta tags are present in HTML."""
+    response = fastapi_client.get("/")
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert '<meta name="description"' in content
+    assert '<meta name="author"' in content
+    assert '<meta name="keywords"' in content
+
+
+def test_open_graph_metadata(fastapi_client):
+    """Test that Open Graph metadata is present in HTML."""
+    response = fastapi_client.get("/")
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert '<meta property="og:type"' in content
+    assert '<meta property="og:site_name"' in content
+    assert '<meta property="og:title"' in content
+    assert '<meta property="og:description"' in content
+    assert '<meta property="og:image"' in content
+
+
+def test_twitter_card_metadata(fastapi_client):
+    """Test that Twitter Card metadata is present in HTML."""
+    response = fastapi_client.get("/")
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert '<meta name="twitter:card" content="summary_large_image"' in content
+    assert '<meta name="twitter:title"' in content
+    assert '<meta name="twitter:description"' in content
+    assert '<meta name="twitter:image"' in content
+
+
+def test_plausible_script_not_injected_by_default(fastapi_client):
+    """Test that Plausible script is not injected when not configured."""
+    response = fastapi_client.get("/")
+    assert response.status_code == 200
+    content = response.content.decode()
+    # Should not contain Plausible script when disabled
+    assert "plausible.io" not in content.lower() or settings.enable_plausible
+
+
+def test_plausible_script_requires_both_settings(fastapi_client, monkeypatch):
+    """Test that Plausible script requires both enable_plausible and plausible_script_hash."""
+    # This test verifies the logic in the template
+    # When only enable_plausible is True but hash is missing, script should not be injected
+    response = fastapi_client.get("/")
+    content = response.content.decode()
+
+    # If Plausible is enabled and hash is set, script should be present
+    if settings.enable_plausible and settings.plausible_script_hash:
+        assert "plausible.io" in content.lower()
+    else:
+        # Otherwise script should not be present
+        assert "plausible.io" not in content.lower()

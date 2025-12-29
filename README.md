@@ -1,6 +1,6 @@
-# gitbrag
+# git brag
 
-Create a brag list of open source contributions
+Create a brag list of open source contributions. View your contributions at [gitbrag.tedivm.com](https://gitbrag.tedivm.com).
 
 ## Features
 

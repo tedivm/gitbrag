@@ -3,6 +3,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
 from logging import getLogger
+from urllib.parse import quote
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -10,7 +11,6 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
-from urllib.parse import quote
 
 from gitbrag.services.auth import get_optional_github_client
 from gitbrag.services.background_tasks import generate_params_hash, schedule_report_generation
@@ -65,6 +65,9 @@ app.mount("/static", StaticFiles(directory=static_file_path), name="static")
 # Setup Jinja2 templates
 templates_path = os.path.dirname(os.path.realpath(__file__)) + "/templates"
 templates = Jinja2Templates(directory=templates_path)
+
+# Add global context for templates
+templates.env.globals["settings"] = settings
 
 
 # Exception Handlers

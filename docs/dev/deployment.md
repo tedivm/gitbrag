@@ -38,10 +38,13 @@ services:
     environment:
       # Application settings
       PROJECT_NAME: gitbrag
-      DEBUG: false
+      # Note: Boolean values must be quoted in YAML environment sections
+      # YAML interprets unquoted true/false as boolean types, but environment
+      # variables are always strings. Quoting ensures consistent behavior.
+      DEBUG: "false"
 
       # Cache configuration
-      CACHE_ENABLED: true
+      CACHE_ENABLED: "true"
       CACHE_REDIS_HOST: redis
       CACHE_REDIS_PORT: 6379
       CACHE_DEFAULT_TTL: 300
@@ -56,7 +59,7 @@ services:
       SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
       SESSION_MAX_AGE: 86400
       OAUTH_CALLBACK_URL: ${OAUTH_CALLBACK_URL}
-      REQUIRE_HTTPS: true
+      REQUIRE_HTTPS: "true"
       OAUTH_SCOPES: read:user
 
       # Cache staleness (24 hours)
@@ -394,12 +397,12 @@ For simpler deployments without external Redis:
 docker run -d \
   --name gitbrag \
   -p 80:80 \
-  -e CACHE_ENABLED=false \
+  -e CACHE_ENABLED="false" \
   -e GITHUB_APP_CLIENT_ID=your_client_id \
   -e GITHUB_APP_CLIENT_SECRET=your_secret \
   -e SESSION_SECRET_KEY=your_session_key \
   -e OAUTH_CALLBACK_URL=https://yourdomain.com/auth/callback \
-  -e REQUIRE_HTTPS=true \
+  -e REQUIRE_HTTPS="true" \
   ghcr.io/tedivm/gitbrag:latest
 ```
 

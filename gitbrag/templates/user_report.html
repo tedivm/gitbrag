@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}{{ username }}'s Contributions{% endblock %}
+{% block title %}GitHub Contributions for @{{ username }} - git brag{% endblock %}
+
+{% block meta_description %}{{ username }} made {{ total_prs }} pull requests across {{ repo_count }} repositories from
+{{ since_date }} to {{ until_date }}{% endblock %}
+
+{% block og_title %}GitHub Contributions for @{{ username }} - git brag{% endblock %}
+{% block og_description %}{{ username }} made {{ total_prs }} pull requests across {{ repo_count }} repositories from {{
+since_date }} to {{ until_date }}{% endblock %}
+{% block og_image %}{% if user_profile and user_profile.avatar_url %}{{ user_profile.avatar_url }}{% else %}{{
+request.url.scheme }}://{{ request.url.netloc }}/static/images/og-image.png{% endif %}{% endblock %}
 
 {% block content %}
 <div class="container">

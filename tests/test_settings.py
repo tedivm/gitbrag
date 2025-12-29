@@ -174,3 +174,40 @@ def test_cache_star_increase_ttl_value():
     """Test that cache_star_increase_ttl has the correct default value."""
     test_settings = Settings()
     assert test_settings.cache_star_increase_ttl == 86400  # 24 hours
+
+
+def test_enable_plausible_attribute():
+    """Test that settings has enable_plausible attribute."""
+    assert hasattr(settings, "enable_plausible")
+    assert isinstance(settings.enable_plausible, bool)
+
+
+def test_enable_plausible_defaults_to_false():
+    """Test that enable_plausible defaults to False."""
+    test_settings = Settings()
+    assert test_settings.enable_plausible is False
+
+
+def test_enable_plausible_from_env(monkeypatch):
+    """Test that enable_plausible can be set from environment."""
+    monkeypatch.setenv("ENABLE_PLAUSIBLE", "true")
+    test_settings = Settings()
+    assert test_settings.enable_plausible is True
+
+
+def test_plausible_script_hash_attribute():
+    """Test that settings has plausible_script_hash attribute."""
+    assert hasattr(settings, "plausible_script_hash")
+
+
+def test_plausible_script_hash_defaults_to_none():
+    """Test that plausible_script_hash defaults to None."""
+    test_settings = Settings()
+    assert test_settings.plausible_script_hash is None
+
+
+def test_plausible_script_hash_from_env(monkeypatch):
+    """Test that plausible_script_hash can be set from environment."""
+    monkeypatch.setenv("PLAUSIBLE_SCRIPT_HASH", "abcd1234")
+    test_settings = Settings()
+    assert test_settings.plausible_script_hash == "abcd1234"

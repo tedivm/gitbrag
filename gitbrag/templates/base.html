@@ -30,6 +30,7 @@
   <title>{% block title %}git brag - GitHub Contribution Reports{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/styles.css">
   <script src="/static/js/theme.js"></script>
+  <script async defer src="https://gitbuttons.tedivm.com/buttons.js"></script>
 
   {# Plausible Analytics (optional, privacy-friendly) #}
   {% if settings and settings.enable_plausible and settings.plausible_script_hash %}
@@ -59,6 +60,11 @@
           {% else %}
           <li><a href="/auth/login">Login with GitHub</a></li>
           {% endif %}
+          <li>
+            <a class="github-button" href="https://github.com/tedivm/gitbrag" 
+               data-icon="octicon-star" data-size="large" data-show-count="true" 
+               aria-label="Star tedivm/gitbrag on GitHub">Star</a>
+          </li>
           <li>
             <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
               🌙

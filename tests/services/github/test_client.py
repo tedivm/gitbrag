@@ -447,6 +447,7 @@ async def test_search_all_issues_concurrent_limit(mock_client: GitHubAPIClient) 
         # Verify the search_issues was called correct number of times
         assert mock_client.search_issues.call_count == total_pages
 
+
 @pytest.mark.asyncio
 async def test_get_user_social_accounts_success(mock_client: GitHubAPIClient) -> None:
     """Test successful retrieval of user social accounts."""
@@ -491,9 +492,7 @@ async def test_get_user_social_accounts_404(mock_client: GitHubAPIClient) -> Non
     with patch.object(mock_client, "_request_with_retry") as mock_request:
         mock_response = AsyncMock()
         mock_response.status_code = 404
-        mock_request.side_effect = httpx.HTTPStatusError(
-            "Not found", request=AsyncMock(), response=mock_response
-        )
+        mock_request.side_effect = httpx.HTTPStatusError("Not found", request=AsyncMock(), response=mock_response)
 
         result = await mock_client.get_user_social_accounts(username)
 
@@ -509,9 +508,7 @@ async def test_get_user_social_accounts_other_http_error(mock_client: GitHubAPIC
     with patch.object(mock_client, "_request_with_retry") as mock_request:
         mock_response = AsyncMock()
         mock_response.status_code = 500
-        mock_request.side_effect = httpx.HTTPStatusError(
-            "Server error", request=AsyncMock(), response=mock_response
-        )
+        mock_request.side_effect = httpx.HTTPStatusError("Server error", request=AsyncMock(), response=mock_response)
 
         result = await mock_client.get_user_social_accounts(username)
 

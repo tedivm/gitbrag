@@ -408,10 +408,10 @@ async def user_report(
             query_params.append("force=true")
         if query_params:
             redirect_url += "?" + "&".join(query_params)
-        
+
         logger.debug(f"Redirecting {username} to {username_lower}")
         return RedirectResponse(url=redirect_url, status_code=301)
-    
+
     # Normalize period parameter
     period = normalize_period(period)
     logger.info(f"User report for {username}, period={period}, force={force}")

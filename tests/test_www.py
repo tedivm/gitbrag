@@ -147,6 +147,7 @@ def test_plausible_script_requires_both_settings(fastapi_client, monkeypatch):
         # Otherwise script should not be present
         assert "plausible.io" not in content.lower()
 
+
 def test_username_redirect_to_lowercase(fastapi_client):
     """Test that uppercase usernames redirect to lowercase URLs with 301 status."""
     # Test uppercase username redirects
@@ -173,9 +174,7 @@ def test_empty_state_encouraging_message():
     # Read template and verify it contains the encouraging message
     import os
 
-    template_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "gitbrag", "templates", "user_report.html"
-    )
+    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "gitbrag", "templates", "user_report.html")
     with open(template_path) as f:
         content = f.read()
 

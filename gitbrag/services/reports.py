@@ -83,7 +83,7 @@ def generate_cache_key(username: str, period: str, show_star_increase: bool = Fa
     """
     # Normalize username to lowercase for consistent cache keys
     username = username.lower()
-    
+
     # Create hash of parameters
     params = {"show_star_increase": show_star_increase}
     params_hash = hashlib.md5(json.dumps(params, sort_keys=True).encode()).hexdigest()[:8]
@@ -110,7 +110,7 @@ async def get_or_fetch_user_profile(
     # Normalize username to lowercase for consistent cache keys
     # (GitHub API will still receive original case, as it's case-preserving)
     username_lower = username.lower()
-    
+
     cache = get_cache("persistent")
     cache_key = f"profile:{username_lower}"
     meta_key = f"{cache_key}:meta"

@@ -235,7 +235,7 @@ GET https://api.github.com/users/{username}/social_accounts
 **Supported Providers:**
 
 - `mastodon` - Mastodon profile URLs
-- `linkedin` - LinkedIn profile URLs  
+- `linkedin` - LinkedIn profile URLs
 - `bluesky` - Bluesky profile URLs
 
 **Response Format:**

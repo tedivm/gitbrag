@@ -463,6 +463,86 @@ export LOG_LEVEL=DEBUG
 gitbrag list username
 ```
 
+### Missing Data in Reports
+
+**Symptoms:**
+
+- "Lines changed" showing 0 when PRs exist
+- Code statistics missing for some PRs
+- Language data incomplete
+- More missing data in longer time periods (2+ years) vs shorter periods (1 year)
+
+**Root Causes:**
+
+1. **Concurrent API request failures**: Too many simultaneous requests can cause transient failures
+2. **Rate limiting**: GitHub API returns 429 errors under load
+3. **Network timeouts**: Individual requests timing out without proper retry
+
+**Solutions:**
+
+1. **Adjust concurrency settings** (recommended first step):
+
+   ```bash
+   # Reduce concurrent file fetches (default: 5)
+   export GITHUB_PR_FILE_FETCH_CONCURRENCY=3
+
+   # Reduce concurrent repo description fetches (default: 10)
+   export GITHUB_REPO_DESC_FETCH_CONCURRENCY=5
+   ```
+
+2. **Monitor collection statistics**:
+
+   ```bash
+   # Enable INFO logging to see success rates
+   export LOG_LEVEL=INFO
+   gitbrag report username
+
+   # Look for lines like:
+   # INFO: Collection statistics: 145 PRs, success rate: 97.2% (141/145), 4 failed
+   # INFO: Cached: 15 (10.3%), Fetched: 130 (89.7%)
+   ```
+
+3. **Check for retry attempts** in logs:
+
+   ```bash
+   # Enable DEBUG logging to see retry details
+   export LOG_LEVEL=DEBUG
+   gitbrag report username
+
+   # Look for lines like:
+   # WARNING: Transient error fetching files for PR #123, retrying (attempt 1/3)...
+   # ERROR: Failed to fetch files for PR #456 after 3 attempts
+   ```
+
+4. **Target success rate >95%**: If success rate is lower:
+   - Reduce `GITHUB_PR_FILE_FETCH_CONCURRENCY` by 2-3
+   - Re-run and check statistics again
+   - Continue reducing until success rate improves
+
+**Understanding the Retry System:**
+
+GitBrag includes automatic retry logic for transient failures:
+
+- **Transient errors** (retried 3 times with exponential backoff):
+  - Timeouts
+  - 429 (rate limit)
+  - 500, 502, 503, 504 (server errors)
+
+- **Fatal errors** (not retried):
+  - 401 (unauthorized)
+  - 403 (forbidden - insufficient permissions)
+  - 404 (not found)
+  - 422 (unprocessable entity)
+
+- **Backoff strategy**: 1s, 2s, 4s delays with ±25% jitter to prevent thundering herd
+
+**Best Practices:**
+
+- Start with default concurrency settings (5 for PRs, 10 for repos)
+- For reports with 100+ PRs across 2+ years, consider reducing to 3
+- Monitor success rates in logs after changes
+- Trade off speed vs reliability based on your needs
+
 ### Token Permission Issues
 
 **Symptoms:**

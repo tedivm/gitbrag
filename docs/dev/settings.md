@@ -241,6 +241,53 @@ print(settings.email.smtp_host)
 print(settings.email.from_address)
 ```
 
+### GitHub API Concurrency Settings
+
+GitBrag includes specific settings to control concurrent API requests when fetching data from GitHub. These settings help balance performance and reliability.
+
+**Available Settings:**
+
+```python
+# gitbrag/conf/github.py
+class GitHubSettings(BaseSettings):
+    github_pr_file_fetch_concurrency: int = Field(default=5, ge=1, le=20)
+    """Maximum concurrent file fetch operations per PR collection run."""
+
+    github_repo_desc_fetch_concurrency: int = Field(default=10, ge=1, le=20)
+    """Maximum concurrent repository description fetch operations."""
+```
+
+**Environment Variables:**
+
+```bash
+# Maximum concurrent file fetches when collecting PR details
+# Lower values = more reliable but slower
+# Higher values = faster but may hit rate limits
+# Default: 5, Range: 1-20
+export GITHUB_PR_FILE_FETCH_CONCURRENCY=5
+
+# Maximum concurrent repository description fetches
+# Default: 10, Range: 1-20
+export GITHUB_REPO_DESC_FETCH_CONCURRENCY=10
+```
+
+**When to Adjust:**
+
+- **Reduce if**: Seeing "missing data" in reports, getting rate limit errors, or experiencing transient API failures
+- **Increase if**: Reports are slow and you're not hitting rate limits (check logs for 429 errors)
+- **For large reports** (2+ years, 100+ PRs): Start with default 5 for PR files, monitor success rates
+- **For small reports** (<50 PRs): Can safely increase to 10-15 for PR files
+
+**Accessing Settings:**
+
+```python
+from gitbrag.conf.github import get_github_settings
+
+settings = get_github_settings()
+print(f"PR file fetch concurrency: {settings.github_pr_file_fetch_concurrency}")
+print(f"Repo desc concurrency: {settings.github_repo_desc_fetch_concurrency}")
+```
+
 ### Computed Properties
 
 Add derived values using properties:

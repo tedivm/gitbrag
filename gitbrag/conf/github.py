@@ -42,6 +42,20 @@ class GitHubSettings(BaseSettings):
         description="Port for local OAuth callback server",
     )
 
+    # API request concurrency limits
+    github_pr_file_fetch_concurrency: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Maximum concurrent PR file fetch operations (1-20, lower is more reliable)",
+    )
+    github_repo_desc_fetch_concurrency: int = Field(
+        default=10,
+        ge=1,
+        le=20,
+        description="Maximum concurrent repository description fetches (1-20)",
+    )
+
     @field_validator("github_oauth_callback_port")
     @classmethod
     def validate_port(cls, v: int) -> int:
@@ -72,3 +86,12 @@ class GitHubSettings(BaseSettings):
             if self.github_app_client_secret is None:
                 raise ValueError("github_app_client_secret is required when using GitHub App authentication")
         return self
+
+
+def get_github_settings() -> GitHubSettings:
+    """Get GitHub settings instance.
+
+    Returns:
+        GitHubSettings instance with settings loaded from environment
+    """
+    return GitHubSettings()

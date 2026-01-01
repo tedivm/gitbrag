@@ -112,6 +112,36 @@ class GitHubAPIClient:
             # Re-raise if not rate limit or max retries exceeded
             raise
 
+    async def validate_token(self) -> bool:
+        """Validate that the current token is valid with GitHub API.
+
+        Makes a lightweight API call to GitHub's /user endpoint to verify
+        token validity. This is useful for proactive validation before
+        starting expensive operations like background jobs.
+
+        Returns:
+            True if token is valid (200 response), False if expired/invalid (401/403)
+
+        Raises:
+            httpx.HTTPStatusError: For other HTTP errors (rate limits, server errors)
+            httpx.TimeoutException: If request times out after retries
+            RuntimeError: If client not initialized as context manager
+        """
+        if not self._client:
+            raise RuntimeError("Client not initialized - use async with context manager")
+
+        try:
+            response = await self._client.request("GET", f"{self.base_url}/user")
+            response.raise_for_status()
+            return True
+        except httpx.HTTPStatusError as e:
+            # 401/403 means token is expired or invalid
+            if e.response.status_code in (401, 403):
+                logger.debug(f"Token validation failed with status {e.response.status_code}")
+                return False
+            # Other errors (rate limits, server errors) should propagate
+            raise
+
     async def get_authenticated_user(self) -> dict[str, Any]:
         """Get the authenticated user's information.
 

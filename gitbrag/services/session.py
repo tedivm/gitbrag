@@ -4,6 +4,7 @@ This module provides session middleware configuration and helper functions
 for managing user sessions with Redis backend.
 """
 
+from logging import getLogger
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -12,6 +13,8 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from gitbrag.conf.settings import Settings
 from gitbrag.services.encryption import decrypt_token, encrypt_token
+
+logger = getLogger(__name__)
 
 
 def add_session_middleware(app: FastAPI, settings: Settings) -> None:
@@ -68,6 +71,20 @@ def clear_session(request: Request) -> None:
     """
     if hasattr(request, "session"):
         request.session.clear()
+
+
+def invalidate_session(request: Request, reason: str = "invalid token") -> None:
+    """Invalidate user session and clear all session data.
+
+    Used when token validation fails or explicit logout requested.
+    Logs the invalidation event for monitoring and debugging.
+
+    Args:
+        request: FastAPI request object
+        reason: Reason for session invalidation (for logging)
+    """
+    clear_session(request)
+    logger.info(f"Session invalidated: {reason}")
 
 
 def store_encrypted_token(request: Request, token: SecretStr | str, settings: Settings) -> None:

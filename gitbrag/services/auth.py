@@ -9,7 +9,7 @@ from logging import getLogger
 from fastapi import HTTPException, Request, status
 
 from gitbrag.services.github.client import GitHubAPIClient
-from gitbrag.services.session import get_decrypted_token, is_authenticated, set_session_data
+from gitbrag.services.session import get_decrypted_token, invalidate_session, is_authenticated, set_session_data
 from gitbrag.settings import settings
 
 logger = getLogger(__name__)
@@ -54,7 +54,22 @@ async def get_authenticated_github_client(
     # Create and return authenticated client
     try:
         client = GitHubAPIClient(token=token)
+
+        # Validate token with GitHub API before returning client
+        async with client:
+            is_valid = await client.validate_token()
+            if not is_valid:
+                logger.warning("Token validation failed for user session")
+                invalidate_session(request, reason="token validation failed")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Your session has expired. Please log in again.",
+                )
+
         return client
+    except HTTPException:
+        # Re-raise HTTP exceptions (including the 401 from failed validation)
+        raise
     except Exception as e:
         logger.exception(f"Failed to create GitHub client: {e}")
         raise HTTPException(

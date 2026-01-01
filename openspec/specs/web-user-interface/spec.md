@@ -148,6 +148,27 @@ The system MUST manage user sessions with secure cookies and server-side storage
 **And** the system redirects to `/auth/login`
 **And** no error is displayed (missing session is expected for new users)
 
+#### Scenario: Automatically invalidate session on expired token
+
+**ADDED** (2026-01-01): **Given** a user has a session with an OAuth token
+**And** the token has expired on GitHub's side
+**When** the system validates the token during an authenticated request
+**Then** the token validation fails (401/403 from GitHub)
+**And** the system automatically calls `invalidate_session()` to clear session data
+**And** the system removes the session from Redis
+**And** the system clears the session cookie
+**And** the system logs: "Session invalidated due to invalid token"
+**And** the user is redirected to `/auth/login`
+
+#### Scenario: Preserve original URL after automatic session invalidation
+
+**ADDED** (2026-01-01): **Given** a user attempts to access `/user/github/octocat`
+**And** the user's session has an expired token
+**When** token validation fails and the session is invalidated
+**Then** the system stores `/user/github/octocat` as the redirect target
+**And** after re-authentication, the user is redirected back to `/user/github/octocat`
+**And** the report generation proceeds normally
+
 ### Requirement: Two-section report layout
 
 The system MUST display contribution reports in a structured format with a high-level summary section at the top and a detailed repository-by-repository breakdown below.

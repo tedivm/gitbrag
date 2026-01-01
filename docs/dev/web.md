@@ -93,6 +93,37 @@ uvicorn gitbrag.www:app --host 0.0.0.0 --port 80
 - OAuth tokens are encrypted using Fernet symmetric encryption
 - Sessions expire after 24 hours (configurable)
 
+#### Automatic Session Invalidation
+
+GitBrag proactively validates GitHub tokens to ensure accurate authentication state and prevent cascading failures:
+
+**Token Validation:**
+
+- Every authenticated web request validates the token with GitHub's `/user` endpoint
+- Invalid or expired tokens trigger automatic session invalidation
+- Users receive clear error messages prompting re-authentication
+- Background jobs validate tokens before scheduling to fail fast
+
+**Benefits:**
+
+- **Accurate State**: No false "logged in" state with expired tokens
+- **Better UX**: Clear error messages instead of confusing failures
+- **Resource Efficiency**: Prevents wasted background jobs with invalid tokens
+- **System Reliability**: Reduces cascading failures from expired tokens
+
+**Implementation Details:**
+
+```python
+# In get_authenticated_github_client() dependency:
+async with client:
+    is_valid = await client.validate_token()
+    if not is_valid:
+        invalidate_session(request, reason="token validation failed")
+        raise HTTPException(401, detail="Your session has expired. Please log in again.")
+```
+
+See [GitHub API Integration](./github-api.md#token-validation) for technical details.
+
 ### Caching Strategy
 
 - Reports are cached in Redis with period-based keys

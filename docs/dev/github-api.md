@@ -312,6 +312,98 @@ The client automatically handles rate limiting:
 3. **Reset Time**: Waits until `X-RateLimit-Reset` time when limit is hit
 4. **Retry**: Automatically retries failed requests up to max_retries (default: 3)
 
+### Token Validation
+
+The `GitHubAPIClient` includes a `validate_token()` method to proactively verify token validity before starting expensive operations.
+
+#### How It Works
+
+The validation method makes a lightweight GET request to GitHub's `/user` endpoint:
+
+```python
+async def validate_token(self) -> bool:
+    """Validate that the current token is valid with GitHub API.
+
+    Returns:
+        True if token is valid (200 response), False if expired/invalid (401/403)
+    """
+```
+
+**Behavior:**
+
+- Returns `True` for valid tokens (200 response)
+- Returns `False` for expired/invalid tokens (401 or 403 response)
+- Raises exceptions for other errors (rate limits, network issues, server errors)
+
+#### When Validation Occurs
+
+Token validation happens automatically in two scenarios:
+
+##### Web Authentication Flow
+
+When a user makes an authenticated web request:
+
+```text
+1. Request hits authenticated route
+2. get_authenticated_github_client() dependency called
+3. Token decrypted from session
+4. GitHubAPIClient created with token
+5. validate_token() called to verify with GitHub
+6. If invalid: session invalidated, 401 returned
+7. If valid: request proceeds normally
+```
+
+##### Background Job Scheduling
+
+Before scheduling background report generation:
+
+```text
+1. schedule_report_generation() called
+2. Rate limit check passes
+3. Token validated with validate_token()
+4. If invalid: job not scheduled, returns False
+5. If valid: job scheduled and started
+```
+
+#### User Experience Benefits
+
+**Accurate Session State:**
+
+- No false "logged in" state with expired tokens
+- Automatic logout when tokens expire
+- Clear error messages prompting re-authentication
+
+**Fail-Fast Behavior:**
+
+- Background jobs rejected immediately with invalid tokens
+- No wasted resources on operations that will fail
+- Faster feedback to users
+
+**Resource Optimization:**
+
+- Prevents cascading failures from expired tokens
+- Reduces unnecessary API calls with invalid tokens
+- Improves overall system performance
+
+#### Implementation Example
+
+Using token validation in custom code:
+
+```python
+from gitbrag.services.github.client import GitHubAPIClient
+from pydantic import SecretStr
+
+async def check_authentication(token: str) -> bool:
+    """Check if a GitHub token is still valid."""
+    client = GitHubAPIClient(token=SecretStr(token))
+    async with client:
+        is_valid = await client.validate_token()
+        if not is_valid:
+            print("Token has expired or is invalid")
+            return False
+        return True
+```
+
 ### Pagination
 
 The GitHub Search API returns up to 100 results per page. The client automatically:

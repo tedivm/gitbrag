@@ -467,7 +467,7 @@ async def user_report(
         logger.info(f"No cache available, scheduling generation for {username}")
 
     # Schedule background task if needed
-    if should_regenerate:
+    if should_regenerate and token_str is not None:
         scheduled = await schedule_report_generation(
             background_tasks=background_tasks,
             username=username,

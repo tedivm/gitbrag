@@ -404,3 +404,68 @@ The system MUST request only the minimal OAuth scopes necessary for functionalit
 **And** the attacker cannot create or delete resources
 **And** damage is minimized compared to broader scopes
 
+### Requirement: Proactive token validation
+
+**ADDED** (2026-01-01): The system MUST proactively validate OAuth tokens before initiating expensive operations to detect expired or invalid tokens early and fail fast.
+
+#### Scenario: Validate token before authenticated web request
+
+**Given** a user has a session with a stored OAuth token
+**And** the user accesses a route requiring GitHub authentication
+**When** the system retrieves the token from the session
+**Then** the system validates the token by calling GitHub's `/user` endpoint
+**And** if the token is valid (200 response), the request proceeds normally
+**And** if the token is invalid (401/403 response), the session is invalidated immediately
+**And** the user is redirected to `/auth/login` with a clear message
+
+#### Scenario: Validate token before starting background job
+
+**Given** a background job needs to be scheduled for report generation
+**And** the job requires an authenticated GitHub token
+**When** the system prepares to schedule the job
+**Then** the system validates the token by calling GitHub's `/user` endpoint
+**And** if the token is valid, the job is scheduled and starts execution
+**And** if the token is invalid, the job is not scheduled
+**And** a warning is logged indicating token validation failed
+**And** no resources are wasted on a job that will fail
+
+#### Scenario: Detect expired token and clear session
+
+**Given** a user's OAuth token has expired
+**And** the user has an active session with the expired token
+**When** the system validates the token during a request
+**Then** the GitHub API returns 401 Unauthorized
+**And** the system calls `invalidate_session()` to clear all session data
+**And** the system logs a warning about the expired token
+**And** the user is redirected to `/auth/login`
+**And** the original requested URL is preserved for post-login redirect
+
+#### Scenario: Handle network errors during validation
+
+**Given** a user has a session with a token
+**And** the system validates the token before a request
+**When** the GitHub API is unreachable (network error)
+**Then** the validation raises a network exception
+**And** the system does NOT invalidate the session (may be temporary)
+**And** the system displays an error message about GitHub API being unavailable
+**And** the user can retry the operation
+
+#### Scenario: Fail fast on authentication error in background job
+
+**Given** a background job is executing with a GitHub token
+**And** the token becomes invalid mid-execution
+**When** a GitHub API call returns 401 or 403
+**Then** the system immediately aborts the job execution
+**And** the system marks the task as failed with an authentication error
+**And** the system does NOT retry the operation
+**And** the system logs: "Authentication failed for task {task_id}, aborting"
+
+#### Scenario: Use lightweight endpoint for token validation
+
+**Given** the system needs to validate a token
+**When** the system makes a validation API call
+**Then** the system calls `/user` endpoint (minimal payload)
+**And** the endpoint requires authentication (detects invalid tokens)
+**And** the endpoint is read-only (no side effects)
+**And** the validation completes quickly (~50-100ms)
+**And** the validation counts against rate limits minimally

@@ -10,6 +10,7 @@ from gitbrag.services.session import (
     clear_session,
     get_decrypted_token,
     get_session,
+    invalidate_session,
     is_authenticated,
     set_session_data,
     store_encrypted_token,
@@ -168,3 +169,61 @@ def test_is_authenticated_without_session():
     result = is_authenticated(request)
 
     assert result is False
+
+
+def test_invalidate_session_clears_data(mock_request):
+    """Test invalidate_session clears all session data."""
+    mock_request.session = {"key1": "value1", "key2": "value2", "authenticated": True}
+
+    invalidate_session(mock_request)
+
+    # Check that session was cleared
+    assert len(mock_request.session) == 0
+
+
+def test_invalidate_session_with_custom_reason(mock_request, caplog):
+    """Test invalidate_session logs custom reason."""
+    import logging
+
+    caplog.set_level(logging.INFO)
+    mock_request.session = {"authenticated": True}
+
+    invalidate_session(mock_request, reason="token validation failed")
+
+    # Check that session was cleared
+    assert len(mock_request.session) == 0
+    # Check that custom reason appears in logs
+    assert "token validation failed" in caplog.text
+    assert "Session invalidated" in caplog.text
+
+
+def test_invalidate_session_idempotent(mock_request):
+    """Test invalidate_session can be called multiple times without error."""
+    mock_request.session = {"key": "value"}
+
+    # Call twice
+    invalidate_session(mock_request)
+    invalidate_session(mock_request)
+
+    # Should not raise error
+    assert len(mock_request.session) == 0
+
+
+def test_invalidate_session_without_session():
+    """Test invalidate_session when session doesn't exist."""
+    request = MagicMock(spec=[])
+
+    # Should not raise error
+    invalidate_session(request)
+
+
+def test_invalidate_session_default_reason(mock_request, caplog):
+    """Test invalidate_session uses default reason when not specified."""
+    import logging
+
+    caplog.set_level(logging.INFO)
+    invalidate_session(mock_request)
+
+    # Check default reason appears in logs
+    assert "invalid token" in caplog.text
+    assert "Session invalidated" in caplog.text

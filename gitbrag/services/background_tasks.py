@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 from logging import getLogger
 
+import httpx
 from fastapi import BackgroundTasks
 from pydantic import SecretStr
 
@@ -42,7 +43,7 @@ async def schedule_report_generation(
     username: str,
     period: str,
     params_hash: str,
-    token: str | None = None,
+    token: str,
 ) -> bool:
     """Schedule background report generation if not already in progress.
 
@@ -55,7 +56,7 @@ async def schedule_report_generation(
         username: GitHub username (subject of the report)
         period: Report period (1_year, 2_years, etc.)
         params_hash: Hash of report parameters
-        token: Optional GitHub API token for authenticated requests
+        token: GitHub API token for authenticated requests (required)
 
     Returns:
         True if task was scheduled, False if already active or rate limited
@@ -70,6 +71,18 @@ async def schedule_report_generation(
     # Check if this reported user can start a new task (rate limiting)
     if not await can_start_reported_user_task(username):
         logger.info(f"Rate limit reached for reported user {username}, skipping task scheduling")
+        return False
+
+    # Validate token before scheduling job to fail fast
+    try:
+        client = GitHubAPIClient(token=SecretStr(token))
+        async with client:
+            is_valid = await client.validate_token()
+            if not is_valid:
+                logger.warning(f"Token validation failed for background job, not scheduling: {username}:{period}")
+                return False
+    except Exception as e:
+        logger.error(f"Token validation error for background job, not scheduling: {username}:{period}: {e}")
         return False
 
     # Register task start
@@ -163,6 +176,18 @@ async def generate_report_background(
         await cache.set(meta_key, metadata)
 
         logger.info(f"Successfully completed background task {task_id}, updated cache {cache_key}")
+
+    except httpx.HTTPStatusError as e:
+        # Fail fast on authentication errors - don't retry or continue
+        if e.response.status_code in (401, 403):
+            # Check if this is actually an auth error vs rate limit
+            is_rate_limit = e.response.status_code == 429 or e.response.headers.get("X-RateLimit-Remaining") == "0"
+            if not is_rate_limit:
+                logger.error(f"Authentication error in background job {task_id}, aborting: {e}")
+                await complete_task(task_id)
+                return
+        # For other HTTP errors, log and continue to finally block
+        logger.exception(f"Background task {task_id} failed: {e}")
 
     except Exception as e:
         logger.exception(f"Background task {task_id} failed: {e}")

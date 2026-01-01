@@ -1,33 +1,73 @@
-<!-- OPENSPEC:START -->
-# OpenSpec Instructions
-
-These instructions are for AI assistants working in this project.
-
-Always open `@/openspec/AGENTS.md` when the request:
-
-- Mentions planning or proposals (words like proposal, spec, change, plan)
-- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
-
-Use `@/openspec/AGENTS.md` to learn:
-
-- How to create and apply change proposals
-- Spec format and conventions
-- Project structure and guidelines
-
-Keep this managed block so 'openspec update' can refresh the instructions.
-
-<!-- OPENSPEC:END -->
-
-When validating openspec make sure to use no-interactive flags when appropriate:
-
-> openspec validate --all --strict --no-interactive
-
 # Agent Instructions
 
 You should always follow the best practices outlined in this document. If there is a valid reason why you cannot follow one of these practices, you should inform the user and document the reasons.
 
 Before beginning any task, make sure you review the documentation (`docs/dev/` and `README.md`), the existing tests to understand the project, and the task runner (Makefile) to understand what dev tools are available and how to use them. You should review code related to your request to understand preferred style: for example, you should review other tests before writing a new test suite, or review existing routers before creating a new one.
+
+## Important Commands
+
+### Development Environment Setup
+
+```bash
+make install # Install dependencies and set up virtual environment
+make sync # Sync dependencies with uv.lock
+make pre-commit # Install pre-commit hooks
+```
+
+### Testing and Validation
+
+```bash
+make tests # Run all tests and checks (pytest, ruff, black, mypy, dapperdata, tomlsort)
+make pytest # Run pytest with coverage report
+make pytest_loud # Run pytest with debug logging enabled
+```
+
+### Code Quality Checks
+
+```bash
+make ruff_check # Check code with ruff linter
+make black_check # Check code formatting with black
+make mypy_check # Run type checking with mypy
+make dapperdata_check # Check data file formatting
+make tomlsort_check # Check TOML file sorting
+```
+
+### Code Formatting (Auto-fix)
+
+```bash
+make chores # Run all formatting fixes (ruff, black, dapperdata, tomlsort)
+make ruff_fixes # Auto-fix ruff issues
+make black_fixes # Auto-format code with ruff using the black format
+make dapperdata_fixes # Auto-format data files
+make tomlsort_fixes # Auto-sort TOML files
+```
+
+### Dependency Management
+
+```bash
+make lock # Update and lock dependencies
+make lock-check # Check if lock file is up to date
+```
+
+### OpenSpec Validation
+
+```bash
+openspec validate --all --strict --no-interactive # Validate all OpenSpec documents
+```
+
+### Packaging
+
+```bash
+make build # Build package distribution
+```
+
+### Docker
+
+```bash
+docker compose up -d # Start development environment and detach session
+docker compose down -v # Stop and remove development environment (including volumes)
+```
+
 
 ## Best Practices
 
@@ -132,3 +172,25 @@ Before beginning any task, make sure you review the documentation (`docs/dev/` a
 - A `.env.example` file should exist as a template for new developers to create their `.env` file and learn what variables to set.
 - Python projects should always use virtual environments at `.venv` in the project root. This should be activated before running tests.
 - Use `uv` for Python version management and package installation instead of pyenv and pip for significantly faster installations and automatic Python version handling.
+
+
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->

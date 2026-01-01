@@ -528,3 +528,88 @@ async def test_get_user_social_accounts_unexpected_error(mock_client: GitHubAPIC
 
         # Should return empty list and log warning instead of raising exception
         assert result == []
+
+
+@pytest.mark.asyncio
+async def test_validate_token_with_valid_token(mock_client: GitHubAPIClient) -> None:
+    """Test validate_token with valid token (200 response)."""
+    with patch.object(mock_client, "_client") as mock_http_client:
+        mock_response = AsyncMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = lambda: None
+        mock_http_client.request = AsyncMock(return_value=mock_response)
+
+        result = await mock_client.validate_token()
+
+        assert result is True
+        mock_http_client.request.assert_called_once_with("GET", "https://api.github.com/user")
+
+
+@pytest.mark.asyncio
+async def test_validate_token_with_unauthorized_token(mock_client: GitHubAPIClient) -> None:
+    """Test validate_token with unauthorized token (401 response)."""
+    with patch.object(mock_client, "_client") as mock_http_client:
+        mock_response = AsyncMock()
+        mock_response.status_code = 401
+        mock_http_client.request = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Unauthorized", request=AsyncMock(), response=mock_response)
+        )
+
+        result = await mock_client.validate_token()
+
+        assert result is False
+
+
+@pytest.mark.asyncio
+async def test_validate_token_with_forbidden_token(mock_client: GitHubAPIClient) -> None:
+    """Test validate_token with forbidden token (403 response)."""
+    with patch.object(mock_client, "_client") as mock_http_client:
+        mock_response = AsyncMock()
+        mock_response.status_code = 403
+        mock_http_client.request = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Forbidden", request=AsyncMock(), response=mock_response)
+        )
+
+        result = await mock_client.validate_token()
+
+        assert result is False
+
+
+@pytest.mark.asyncio
+async def test_validate_token_with_rate_limit(mock_client: GitHubAPIClient) -> None:
+    """Test validate_token with rate limit error (429 response) - should propagate exception."""
+    with patch.object(mock_client, "_client") as mock_http_client:
+        mock_response = AsyncMock()
+        mock_response.status_code = 429
+        mock_http_client.request = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Rate limit exceeded", request=AsyncMock(), response=mock_response)
+        )
+
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await mock_client.validate_token()
+
+        assert exc_info.value.response.status_code == 429
+
+
+@pytest.mark.asyncio
+async def test_validate_token_with_server_error(mock_client: GitHubAPIClient) -> None:
+    """Test validate_token with server error (500 response) - should propagate exception."""
+    with patch.object(mock_client, "_client") as mock_http_client:
+        mock_response = AsyncMock()
+        mock_response.status_code = 500
+        mock_http_client.request = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Server error", request=AsyncMock(), response=mock_response)
+        )
+
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await mock_client.validate_token()
+
+        assert exc_info.value.response.status_code == 500
+
+
+@pytest.mark.asyncio
+async def test_validate_token_without_client_initialized(mock_client: GitHubAPIClient) -> None:
+    """Test validate_token raises RuntimeError when client not initialized."""
+    # mock_client._client is None by default (not initialized as context manager)
+    with pytest.raises(RuntimeError, match="Client not initialized"):
+        await mock_client.validate_token()

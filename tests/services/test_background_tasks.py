@@ -44,19 +44,27 @@ async def test_schedule_report_generation_registers_task():
     params_hash = "abc123"
     token = "test_token"
 
-    result = await schedule_report_generation(
-        background_tasks=background_tasks,
-        username=username,
-        period=period,
-        params_hash=params_hash,
-        token=token,
-    )
+    with patch("gitbrag.services.background_tasks.GitHubAPIClient") as mock_client_class:
+        # Mock GitHubAPIClient with valid token validation
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aexit__ = AsyncMock(return_value=None)
+        mock_client_instance.validate_token = AsyncMock(return_value=True)
+        mock_client_class.return_value = mock_client_instance
 
-    # Should succeed
-    assert result is True
+        result = await schedule_report_generation(
+            background_tasks=background_tasks,
+            username=username,
+            period=period,
+            params_hash=params_hash,
+            token=token,
+        )
 
-    # Should have one background task scheduled
-    assert len(background_tasks.tasks) == 1
+        # Should succeed
+        assert result is True
+
+        # Should have one background task scheduled
+        assert len(background_tasks.tasks) == 1
 
 
 @pytest.mark.asyncio
@@ -68,25 +76,33 @@ async def test_schedule_report_generation_returns_false_for_duplicate():
     params_hash = "abc123"
     token = "test_token"
 
-    # Schedule first task
-    result1 = await schedule_report_generation(
-        background_tasks=background_tasks,
-        username=username,
-        period=period,
-        params_hash=params_hash,
-        token=token,
-    )
-    assert result1 is True
+    with patch("gitbrag.services.background_tasks.GitHubAPIClient") as mock_client_class:
+        # Mock GitHubAPIClient with valid token validation
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aexit__ = AsyncMock(return_value=None)
+        mock_client_instance.validate_token = AsyncMock(return_value=True)
+        mock_client_class.return_value = mock_client_instance
 
-    # Try to schedule duplicate - should fail
-    result2 = await schedule_report_generation(
-        background_tasks=background_tasks,
-        username=username,
-        period=period,
-        params_hash=params_hash,
-        token=token,
-    )
-    assert result2 is False
+        # Schedule first task
+        result1 = await schedule_report_generation(
+            background_tasks=background_tasks,
+            username=username,
+            period=period,
+            params_hash=params_hash,
+            token=token,
+        )
+        assert result1 is True
+
+        # Try to schedule duplicate - should fail
+        result2 = await schedule_report_generation(
+            background_tasks=background_tasks,
+            username=username,
+            period=period,
+            params_hash=params_hash,
+            token=token,
+        )
+        assert result2 is False
 
 
 @pytest.mark.asyncio
@@ -96,26 +112,34 @@ async def test_schedule_report_generation_respects_per_user_limits():
     username = "testuser"
     token = "test_token"
 
-    # Schedule first task for this reported user
-    result1 = await schedule_report_generation(
-        background_tasks=background_tasks,
-        username=username,
-        period="1_year",
-        params_hash="abc123",
-        token=token,
-    )
-    assert result1 is True
+    with patch("gitbrag.services.background_tasks.GitHubAPIClient") as mock_client_class:
+        # Mock GitHubAPIClient with valid token validation
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aexit__ = AsyncMock(return_value=None)
+        mock_client_instance.validate_token = AsyncMock(return_value=True)
+        mock_client_class.return_value = mock_client_instance
 
-    # Try to schedule second task for same reported user (different period)
-    # Should fail due to per-user rate limit
-    result2 = await schedule_report_generation(
-        background_tasks=background_tasks,
-        username=username,
-        period="2_years",
-        params_hash="def456",
-        token=token,
-    )
-    assert result2 is False
+        # Schedule first task for this reported user
+        result1 = await schedule_report_generation(
+            background_tasks=background_tasks,
+            username=username,
+            period="1_year",
+            params_hash="abc123",
+            token=token,
+        )
+        assert result1 is True
+
+        # Try to schedule second task for same reported user (different period)
+        # Should fail due to per-user rate limit
+        result2 = await schedule_report_generation(
+            background_tasks=background_tasks,
+            username=username,
+            period="2_years",
+            params_hash="def456",
+            token=token,
+        )
+        assert result2 is False
 
 
 @pytest.mark.asyncio
@@ -125,25 +149,33 @@ async def test_schedule_report_allows_concurrent_tasks_for_different_users():
     background_tasks2 = BackgroundTasks()
     token = "test_token"
 
-    # Schedule task for user1
-    result1 = await schedule_report_generation(
-        background_tasks=background_tasks1,
-        username="user1",
-        period="1_year",
-        params_hash="abc123",
-        token=token,
-    )
-    assert result1 is True
+    with patch("gitbrag.services.background_tasks.GitHubAPIClient") as mock_client_class:
+        # Mock GitHubAPIClient with valid token validation
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aexit__ = AsyncMock(return_value=None)
+        mock_client_instance.validate_token = AsyncMock(return_value=True)
+        mock_client_class.return_value = mock_client_instance
 
-    # Schedule task for user2 - should succeed
-    result2 = await schedule_report_generation(
-        background_tasks=background_tasks2,
-        username="user2",
-        period="1_year",
-        params_hash="abc123",
-        token=token,
-    )
-    assert result2 is True
+        # Schedule task for user1
+        result1 = await schedule_report_generation(
+            background_tasks=background_tasks1,
+            username="user1",
+            period="1_year",
+            params_hash="abc123",
+            token=token,
+        )
+        assert result1 is True
+
+        # Schedule task for user2 - should succeed
+        result2 = await schedule_report_generation(
+            background_tasks=background_tasks2,
+            username="user2",
+            period="1_year",
+            params_hash="abc123",
+            token=token,
+        )
+        assert result2 is True
 
 
 @pytest.mark.asyncio
@@ -271,3 +303,227 @@ async def test_generate_report_background_handles_github_api_errors():
     cache_key = f"report:{username}:{period}:{params_hash}"
     cached_data = await cache.get(cache_key)
     assert cached_data is None
+
+
+@pytest.mark.asyncio
+async def test_schedule_report_with_invalid_token():
+    """Test that schedule_report_generation returns False with invalid token."""
+    background_tasks = BackgroundTasks()
+    username = "testuser"
+    period = "1_year"
+    params_hash = "abc123"
+    token = "invalid_token"
+
+    with patch("gitbrag.services.background_tasks.GitHubAPIClient") as mock_client_class:
+        # Mock GitHubAPIClient with invalid token validation
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aexit__ = AsyncMock(return_value=None)
+        mock_client_instance.validate_token = AsyncMock(return_value=False)
+        mock_client_class.return_value = mock_client_instance
+
+        result = await schedule_report_generation(
+            background_tasks=background_tasks,
+            username=username,
+            period=period,
+            params_hash=params_hash,
+            token=token,
+        )
+
+        # Should return False (not scheduled)
+        assert result is False
+        # No background tasks should be scheduled
+        assert len(background_tasks.tasks) == 0
+
+
+@pytest.mark.asyncio
+async def test_schedule_report_with_valid_token():
+    """Test that schedule_report_generation succeeds with valid token."""
+    background_tasks = BackgroundTasks()
+    username = "testuser"
+    period = "1_year"
+    params_hash = "abc123"
+    token = "valid_token"
+
+    with patch("gitbrag.services.background_tasks.GitHubAPIClient") as mock_client_class:
+        # Mock GitHubAPIClient with valid token validation
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aexit__ = AsyncMock(return_value=None)
+        mock_client_instance.validate_token = AsyncMock(return_value=True)
+        mock_client_class.return_value = mock_client_instance
+
+        result = await schedule_report_generation(
+            background_tasks=background_tasks,
+            username=username,
+            period=period,
+            params_hash=params_hash,
+            token=token,
+        )
+
+        # Should succeed
+        assert result is True
+        # Should have one background task scheduled
+        assert len(background_tasks.tasks) == 1
+
+
+@pytest.mark.asyncio
+async def test_schedule_report_with_validation_error():
+    """Test that schedule_report_generation returns False when validation raises exception."""
+    background_tasks = BackgroundTasks()
+    username = "testuser"
+    period = "1_year"
+    params_hash = "abc123"
+    token = "test_token"
+
+    with patch("gitbrag.services.background_tasks.GitHubAPIClient") as mock_client_class:
+        # Mock validation raising an exception
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aexit__ = AsyncMock(return_value=None)
+        mock_client_instance.validate_token = AsyncMock(side_effect=Exception("Network error"))
+        mock_client_class.return_value = mock_client_instance
+
+        result = await schedule_report_generation(
+            background_tasks=background_tasks,
+            username=username,
+            period=period,
+            params_hash=params_hash,
+            token=token,
+        )
+
+        # Should return False (not scheduled)
+        assert result is False
+        # No background tasks should be scheduled
+        assert len(background_tasks.tasks) == 0
+
+
+@pytest.mark.asyncio
+async def test_generate_report_background_aborts_on_401_error():
+    """Test that generate_report_background aborts early on 401 authentication error."""
+    import httpx
+
+    from gitbrag.services.task_tracking import is_task_active, start_task
+
+    task_id = "testuser:1_year:abc123"
+    username = "testuser"
+    period = "1_year"
+    params_hash = "abc123"
+    token = "expired_token"
+
+    # Register task
+    metadata = {
+        "username": username,
+        "period": period,
+        "params_hash": params_hash,
+        "started_at": 1234567890,
+    }
+    await start_task(task_id, metadata)
+
+    # Mock generate_report_data to raise 401 error
+    mock_response = AsyncMock()
+    mock_response.status_code = 401
+    mock_response.headers = {}
+
+    with patch("gitbrag.services.background_tasks.generate_report_data", new_callable=AsyncMock) as mock_generate:
+        mock_generate.side_effect = httpx.HTTPStatusError("Unauthorized", request=AsyncMock(), response=mock_response)
+
+        # Should not raise exception
+        await generate_report_background(
+            task_id=task_id,
+            username=username,
+            period=period,
+            params_hash=params_hash,
+            token=token,
+        )
+
+    # Task should be cleaned up
+    assert await is_task_active(task_id) is False
+
+
+@pytest.mark.asyncio
+async def test_generate_report_background_aborts_on_403_auth_error():
+    """Test that generate_report_background aborts on 403 (non-rate-limit) authentication error."""
+    import httpx
+
+    from gitbrag.services.task_tracking import is_task_active, start_task
+
+    task_id = "testuser:1_year:abc123"
+    username = "testuser"
+    period = "1_year"
+    params_hash = "abc123"
+    token = "forbidden_token"
+
+    # Register task
+    metadata = {
+        "username": username,
+        "period": period,
+        "params_hash": params_hash,
+        "started_at": 1234567890,
+    }
+    await start_task(task_id, metadata)
+
+    # Mock generate_report_data to raise 403 error (not rate limit)
+    mock_response = AsyncMock()
+    mock_response.status_code = 403
+    mock_response.headers = {"X-RateLimit-Remaining": "100"}  # Not a rate limit
+
+    with patch("gitbrag.services.background_tasks.generate_report_data", new_callable=AsyncMock) as mock_generate:
+        mock_generate.side_effect = httpx.HTTPStatusError("Forbidden", request=AsyncMock(), response=mock_response)
+
+        # Should not raise exception
+        await generate_report_background(
+            task_id=task_id,
+            username=username,
+            period=period,
+            params_hash=params_hash,
+            token=token,
+        )
+
+    # Task should be cleaned up
+    assert await is_task_active(task_id) is False
+
+
+@pytest.mark.asyncio
+async def test_generate_report_background_continues_on_rate_limit():
+    """Test that generate_report_background handles rate limit errors normally (not as auth error)."""
+    import httpx
+
+    from gitbrag.services.task_tracking import is_task_active, start_task
+
+    task_id = "testuser:1_year:abc123"
+    username = "testuser"
+    period = "1_year"
+    params_hash = "abc123"
+    token = "valid_token"
+
+    # Register task
+    metadata = {
+        "username": username,
+        "period": period,
+        "params_hash": params_hash,
+        "started_at": 1234567890,
+    }
+    await start_task(task_id, metadata)
+
+    # Mock generate_report_data to raise 403 rate limit error
+    mock_response = AsyncMock()
+    mock_response.status_code = 403
+    mock_response.headers = {"X-RateLimit-Remaining": "0"}  # This is a rate limit
+
+    with patch("gitbrag.services.background_tasks.generate_report_data", new_callable=AsyncMock) as mock_generate:
+        mock_generate.side_effect = httpx.HTTPStatusError(
+            "Rate limit exceeded", request=AsyncMock(), response=mock_response
+        )
+
+        # Should not raise exception
+        await generate_report_background(
+            task_id=task_id,
+            username=username,
+            period=period,
+            params_hash=params_hash,
+            token=token,
+        )
+
+    # Task should still be cleaned up (in finally block)
+    assert await is_task_active(task_id) is False

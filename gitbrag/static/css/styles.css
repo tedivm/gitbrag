@@ -481,7 +481,7 @@ table {
 /* Fixed column widths for consistent alignment */
 table th:nth-child(1),
 table td:nth-child(1) {
-    width: 80px;  /* PR number */
+    width: 100px;  /* PR number */
 }
 
 table th:nth-child(2),

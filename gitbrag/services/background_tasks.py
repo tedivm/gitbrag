@@ -54,7 +54,7 @@ async def schedule_report_generation(
     Args:
         background_tasks: FastAPI BackgroundTasks instance
         username: GitHub username (subject of the report)
-        period: Report period (1_year, 2_years, etc.)
+        period: Report period (1_year, 2_years, 3_years, 5_years, all_time)
         params_hash: Hash of report parameters
         token: GitHub API token for authenticated requests (required)
 

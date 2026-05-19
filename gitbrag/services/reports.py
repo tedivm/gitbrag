@@ -37,7 +37,7 @@ def normalize_period(period: str | None) -> str:
 
     period = period.lower().strip()
     logger.debug(f"Normalizing period: '{period}'")
-    if period in ("1_year", "2_years", "5_years", "all_time"):
+    if period in ("1_year", "2_years", "3_years", "5_years", "all_time"):
         logger.debug(f"Normalized period result: '{period}'")
         return period
 
@@ -60,6 +60,8 @@ def calculate_date_range(period: str) -> tuple[datetime, datetime]:
         since = until - timedelta(days=365)
     elif period == "2_years":
         since = until - timedelta(days=730)
+    elif period == "3_years":
+        since = until - timedelta(days=1095)
     elif period == "5_years":
         since = until - timedelta(days=1825)
     elif period == "all_time":

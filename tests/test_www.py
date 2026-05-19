@@ -197,3 +197,60 @@ def test_company_name_with_at_symbol_becomes_link():
     assert "user_profile.company.startswith('@')" in content
     assert 'href="https://github.com/{{ user_profile.company[1:]' in content
     assert 'target="_blank"' in content
+
+
+def test_3_years_period_in_template():
+    """Test that the 3_years period renders correctly in the template."""
+    import os
+
+    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "gitbrag", "templates", "user_report.html")
+    with open(template_path) as f:
+        content = f.read()
+
+    # Check period selector has 3 Years link
+    assert "period=3_years" in content
+    assert ">3 Years</a>" in content
+
+    # Check period description has 3_years branch
+    assert 'period == "3_years"' in content
+    assert "Past 3 years" in content
+
+
+def test_cached_date_range_uses_cached_meta():
+    """Test that cached_meta since/until are used for date display when available."""
+    import os
+
+    www_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "gitbrag", "www.py")
+    with open(www_path) as f:
+        content = f.read()
+
+    # Verify the code uses cached_meta for date range
+    assert 'cached_meta and "since" in cached_meta and "until" in cached_meta' in content
+    assert 'datetime.fromisoformat(cached_meta["since"])' in content
+    assert 'datetime.fromisoformat(cached_meta["until"])' in content
+
+
+def test_date_range_fallback_when_no_cached_meta():
+    """Test that calculate_date_range is used as fallback when cached_meta is missing."""
+    import os
+
+    www_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "gitbrag", "www.py")
+    with open(www_path) as f:
+        content = f.read()
+
+    # Verify fallback to calculate_date_range exists
+    assert "calculate_date_range(period)" in content
+
+    # Verify the fallback is in an else block after the cached_meta check
+    lines = content.split("\n")
+    cached_meta_idx = None
+    fallback_idx = None
+    for i, line in enumerate(lines):
+        if 'cached_meta and "since" in cached_meta' in line:
+            cached_meta_idx = i
+        if "calculate_date_range(period)" in line:
+            fallback_idx = i
+
+    assert cached_meta_idx is not None, "Should have cached_meta check"
+    assert fallback_idx is not None, "Should have calculate_date_range fallback"
+    assert fallback_idx > cached_meta_idx, "Fallback should come after cached_meta check"

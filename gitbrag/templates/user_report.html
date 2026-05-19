@@ -65,6 +65,8 @@ request.url.scheme }}://{{ request.url.netloc }}/static/images/og-image.png{% en
       Past year
       {% elif period == "2_years" %}
       Past 2 years
+      {% elif period == "3_years" %}
+      Past 3 years
       {% elif period == "5_years" %}
       Past 5 years
       {% elif period == "all_time" %}
@@ -80,6 +82,8 @@ request.url.scheme }}://{{ request.url.netloc }}/static/images/og-image.png{% en
       class="period-link {% if period == '1_year' %}active{% endif %}">1 Year</a>
     <a href="/user/github/{{ username }}?period=2_years"
       class="period-link {% if period == '2_years' %}active{% endif %}">2 Years</a>
+    <a href="/user/github/{{ username }}?period=3_years"
+      class="period-link {% if period == '3_years' %}active{% endif %}">3 Years</a>
     <a href="/user/github/{{ username }}?period=5_years"
       class="period-link {% if period == '5_years' %}active{% endif %}">5 Years</a>
     <a href="/user/github/{{ username }}?period=all_time"

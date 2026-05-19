@@ -388,7 +388,7 @@ async def user_report(
     Args:
         request: FastAPI request object
         username: GitHub username
-        period: Time period (1_year, 2_years, all_time)
+        period: Time period (1_year, 2_years, 3_years, 5_years, all_time)
         force: Force regenerate regardless of cache
         github_client: Optional authenticated GitHub client
         background_tasks: FastAPI background tasks for async generation
@@ -534,8 +534,12 @@ async def user_report(
         else:
             cache_age_str = f"{int(cache_age_seconds / 86400)} days ago"
 
-    # Calculate date range for display
-    since, until = calculate_date_range(period)
+    # Use cached dates if available, otherwise fall back to calculated
+    if cached_meta and "since" in cached_meta and "until" in cached_meta:
+        since = datetime.fromisoformat(cached_meta["since"])
+        until = datetime.fromisoformat(cached_meta["until"])
+    else:
+        since, until = calculate_date_range(period)
 
     # Prepare template context
     context = {

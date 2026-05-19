@@ -7,7 +7,7 @@ The GitBrag web interface provides a browser-based way to view GitHub contributi
 - **GitHub OAuth Authentication**: Secure login using GitHub OAuth with minimal permissions
 - **Public Data Only**: Only displays publicly accessible GitHub data
 - **Report Generation**: View pull request contributions by time period
-- **Period Filtering**: Filter reports by 1 year, 2 years, or all time
+- **Period Filtering**: Filter reports by 1 year, 2 years, 3 years, 5 years, or all time
 - **Repository Breakdown**: See contributions organized by repository
 - **Cached Reports**: Reports are cached for performance, with automatic staleness detection
 - **Responsive Design**: Mobile-first design with dark mode support
@@ -203,7 +203,7 @@ Example: `/user/github/TEDIVM` → 301 Redirect → `/user/github/tedivm`
 
 ### Query Parameters
 
-- `/user/github/{username}?period={period}`: Filter by time period (`1_year`, `2_years`, `all_time`)
+- `/user/github/{username}?period={period}`: Filter by time period (`1_year`, `2_years`, `3_years`, `5_years`, `all_time`)
 - `/user/github/{username}?force=true`: Force regenerate report (requires authentication)
 - `/auth/login?return_to={url}`: Redirect to URL after login
 
@@ -250,7 +250,7 @@ Example: `/user/github/TEDIVM` → 301 Redirect → `/user/github/tedivm`
 ### Report Template (`user_report.html`)
 
 - Report header with username and date range
-- Period selector (1 year, 2 years, all time)
+- Period selector (1 year, 2 years, 3 years, 5 years, all time)
 - Summary card with statistics
 - Repository sections with PR tables
 - Cache status indicator

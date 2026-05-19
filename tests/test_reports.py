@@ -1,6 +1,8 @@
 """Tests for report generation services."""
 
-from gitbrag.services.reports import generate_cache_key
+from datetime import timedelta
+
+from gitbrag.services.reports import calculate_date_range, generate_cache_key, normalize_period
 
 
 def test_generate_cache_key_normalizes_username():
@@ -54,3 +56,24 @@ def test_generate_cache_key_with_star_increase():
 
     # But keys should differ based on parameter
     assert key_without_stars != key_with_stars
+
+
+def test_normalize_period_returns_3_years():
+    """Test that 3_years is accepted as a valid period."""
+    assert normalize_period("3_years") == "3_years"
+    assert normalize_period("3_Years") == "3_years"
+    assert normalize_period("  3_years  ") == "3_years"
+
+
+def test_normalize_period_fallback():
+    """Test that invalid periods fall back to 1_year."""
+    assert normalize_period("invalid") == "1_year"
+    assert normalize_period(None) == "1_year"
+    assert normalize_period("") == "1_year"
+
+
+def test_calculate_date_range_3_years():
+    """Test that 3_years produces a 1095-day range."""
+    since, until = calculate_date_range("3_years")
+    diff = until - since
+    assert diff == timedelta(days=1095)
